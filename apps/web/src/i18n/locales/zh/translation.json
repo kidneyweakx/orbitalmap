@@ -1,0 +1,27 @@
+{
+  "navbar": {
+    "title": "軌道地圖",
+    "language": "語言"
+  },
+  "locationModal": {
+    "title": "地點選擇",
+    "prompt": "請選擇您要使用的地圖位置：",
+    "useCurrentLocation": "使用我的當前位置",
+    "useDefaultLocation": "使用預設位置（日本）"
+  },
+  "mapMenu": {
+    "searchPlaceholder": "搜尋地點...",
+    "searchButton": "搜尋",
+    "coordinates": "座標",
+    "privateSpots": "私密景點列表",
+    "addSpot": "新增景點",
+    "spotNamePlaceholder": "景點名稱",
+    "spotDescriptionPlaceholder": "景點描述 (選填)",
+    "save": "儲存",
+    "cancel": "取消",
+    "noSpots": "尚未添加任何私密景點",
+    "delete": "刪除",
+    "navigateHere": "前往此處",
+    "noDescription": "無描述"
+  }
+}

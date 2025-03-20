@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
 
 interface Spot {
@@ -13,12 +14,31 @@ interface MapMenuProps {
 }
 
 export function MapMenu({ map }: MapMenuProps) {
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [isAddingSpot, setIsAddingSpot] = useState(false);
   const [newSpotName, setNewSpotName] = useState('');
   const [newSpotDescription, setNewSpotDescription] = useState('');
+  const markersRef = useRef<{ [id: string]: mapboxgl.Marker }>({});
+
+  // Load saved spots from localStorage
+  useEffect(() => {
+    const savedSpots = localStorage.getItem('mapSpots');
+    if (savedSpots) {
+      try {
+        setSpots(JSON.parse(savedSpots));
+      } catch (e) {
+        console.error('Error loading saved spots:', e);
+      }
+    }
+  }, []);
+
+  // Save spots to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('mapSpots', JSON.stringify(spots));
+  }, [spots]);
 
   useEffect(() => {
     if (!map) return;
@@ -35,6 +55,34 @@ export function MapMenu({ map }: MapMenuProps) {
       map.off('moveend', handleMove);
     };
   }, [map]);
+
+  // Update markers when spots, map or language changes
+  useEffect(() => {
+    if (!map) return;
+
+    // Clear existing markers
+    Object.values(markersRef.current).forEach(marker => marker.remove());
+    markersRef.current = {};
+
+    // Add new markers
+    spots.forEach(spot => {
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+        `<h3>${spot.name}</h3>
+        <p>${spot.description || t('mapMenu.noDescription')}</p>`
+      );
+
+      const marker = new mapboxgl.Marker({ color: '#0066cc' })
+        .setLngLat(spot.coordinates)
+        .setPopup(popup)
+        .addTo(map);
+
+      markersRef.current[spot.id] = marker;
+    });
+
+    return () => {
+      Object.values(markersRef.current).forEach(marker => marker.remove());
+    };
+  }, [map, spots, t, i18n.language]);
 
   const handleSearch = async () => {
     if (!map || !searchQuery) return;
@@ -74,6 +122,19 @@ export function MapMenu({ map }: MapMenuProps) {
     setNewSpotDescription('');
   };
 
+  const handleSpotClick = (coordinates: [number, number]) => {
+    if (!map) return;
+    
+    map.flyTo({
+      center: coordinates,
+      zoom: 14
+    });
+  };
+
+  const handleDeleteSpot = (id: string) => {
+    setSpots(spots.filter(spot => spot.id !== id));
+  };
+
   return (
     <div className="map-menu">
       <div className="search-section">
@@ -81,20 +142,20 @@ export function MapMenu({ map }: MapMenuProps) {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜尋地點..."
+          placeholder={t('mapMenu.searchPlaceholder')}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <button onClick={handleSearch}>搜尋</button>
+        <button onClick={handleSearch}>{t('mapMenu.searchButton')}</button>
       </div>
 
       <div className="coordinates-section">
-        <p>座標: {coordinates ? `${coordinates[0]}, ${coordinates[1]}` : '載入中...'}</p>
+        <p>{t('mapMenu.coordinates')}: {coordinates ? `${coordinates[0]}, ${coordinates[1]}` : '...'}</p>
       </div>
 
       <div className="spots-section">
         <div className="spots-header">
-          <h3>私密景點列表</h3>
-          <button onClick={() => setIsAddingSpot(true)}>新增景點</button>
+          <h3>{t('mapMenu.privateSpots')}</h3>
+          <button onClick={() => setIsAddingSpot(true)}>{t('mapMenu.addSpot')}</button>
         </div>
 
         {isAddingSpot && (
@@ -103,28 +164,40 @@ export function MapMenu({ map }: MapMenuProps) {
               type="text"
               value={newSpotName}
               onChange={(e) => setNewSpotName(e.target.value)}
-              placeholder="景點名稱"
+              placeholder={t('mapMenu.spotNamePlaceholder')}
             />
             <textarea
               value={newSpotDescription}
               onChange={(e) => setNewSpotDescription(e.target.value)}
-              placeholder="景點描述 (選填)"
+              placeholder={t('mapMenu.spotDescriptionPlaceholder')}
             />
             <div className="form-buttons">
-              <button onClick={handleAddSpot}>儲存</button>
-              <button onClick={() => setIsAddingSpot(false)}>取消</button>
+              <button onClick={handleAddSpot}>{t('mapMenu.save')}</button>
+              <button onClick={() => setIsAddingSpot(false)}>{t('mapMenu.cancel')}</button>
             </div>
           </div>
         )}
 
         <div className="spots-list">
-          {spots.map((spot) => (
-            <div key={spot.id} className="spot-item">
-              <h4>{spot.name}</h4>
-              <p>{spot.coordinates[0]}, {spot.coordinates[1]}</p>
-              {spot.description && <p className="description">{spot.description}</p>}
-            </div>
-          ))}
+          {spots.length === 0 ? (
+            <p className="no-spots">{t('mapMenu.noSpots')}</p>
+          ) : (
+            spots.map((spot) => (
+              <div key={spot.id} className="spot-item">
+                <div className="spot-header">
+                  <h4>{spot.name}</h4>
+                  <button className="delete-spot" onClick={() => handleDeleteSpot(spot.id)}>
+                    {t('mapMenu.delete')}
+                  </button>
+                </div>
+                <p className="spot-coordinates">{spot.coordinates[0]}, {spot.coordinates[1]}</p>
+                {spot.description && <p className="description">{spot.description}</p>}
+                <button className="navigate-button" onClick={() => handleSpotClick(spot.coordinates)}>
+                  {t('mapMenu.navigateHere')}
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

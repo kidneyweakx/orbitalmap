@@ -1,0 +1,27 @@
+{
+  "navbar": {
+    "title": "Orbital Map",
+    "language": "Language"
+  },
+  "locationModal": {
+    "title": "Location Selection",
+    "prompt": "Please select the map location you want to use:",
+    "useCurrentLocation": "Use my current location",
+    "useDefaultLocation": "Use default location (Japan)"
+  },
+  "mapMenu": {
+    "searchPlaceholder": "Search places...",
+    "searchButton": "Search",
+    "coordinates": "Coordinates",
+    "privateSpots": "Private Spots",
+    "addSpot": "Add Spot",
+    "spotNamePlaceholder": "Spot name",
+    "spotDescriptionPlaceholder": "Spot description (optional)",
+    "save": "Save",
+    "cancel": "Cancel",
+    "noSpots": "No private spots added yet",
+    "delete": "Delete",
+    "navigateHere": "Navigate here",
+    "noDescription": "No description"
+  }
+}

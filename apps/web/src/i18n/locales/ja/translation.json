@@ -1,0 +1,27 @@
+{
+  "navbar": {
+    "title": "オービタルマップ",
+    "language": "言語"
+  },
+  "locationModal": {
+    "title": "位置選択",
+    "prompt": "使用したい地図の位置を選択してください：",
+    "useCurrentLocation": "現在位置を使用する",
+    "useDefaultLocation": "デフォルト位置を使用する（日本）"
+  },
+  "mapMenu": {
+    "searchPlaceholder": "場所を検索...",
+    "searchButton": "検索",
+    "coordinates": "座標",
+    "privateSpots": "プライベートスポット",
+    "addSpot": "スポットを追加",
+    "spotNamePlaceholder": "スポット名",
+    "spotDescriptionPlaceholder": "スポットの説明（任意）",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "noSpots": "まだプライベートスポットが追加されていません",
+    "delete": "削除",
+    "navigateHere": "ここへ移動",
+    "noDescription": "説明なし"
+  }
+}
