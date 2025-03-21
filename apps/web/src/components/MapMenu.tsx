@@ -64,7 +64,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     setAddSpotPosition(clickedPosition);
     setIsAddingSpot(true);
     setIsMenuCollapsed(false); // Expand menu when adding spot
-    
   }, [clickedPosition, map]);
 
   // Load saved spots from localStorage

@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import i18n from './i18n'
+import { PrivyProvider } from './providers/PrivyProvider'
+import { AuthProvider } from './providers/AuthContext'
 
 // Ensure i18n is initialized
 i18n.on('initialized', () => {
@@ -11,6 +13,10 @@ i18n.on('initialized', () => {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <PrivyProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </PrivyProvider>
   </React.StrictMode>,
 )

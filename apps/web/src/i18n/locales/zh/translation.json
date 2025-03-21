@@ -7,6 +7,10 @@
     "showRewards": "顯示懸停獎勵",
     "hideRewards": "隱藏懸停獎勵",
     "zkVerification": "零知識驗證",
+    "toolbox": "工具箱",
+    "teeZone": "TEE 區域",
+    "nillionLLM": "Nillion LLM",
+    "testAPI": "API 測試",
     "mapMenu": "地图菜单",
     "search": "搜索",
     "login": "登录",
@@ -15,6 +19,7 @@
   "locationModal": {
     "title": "位置選擇",
     "prompt": "請選擇您要使用的地圖位置：",
+    "message": "請選擇您要使用的地圖位置：",
     "useCurrentLocation": "使用我的當前位置",
     "useDefaultLocation": "使用默認位置（日本）",
     "addLocation": "添加位置",
@@ -180,5 +185,29 @@
       "invalidThreshold": "閾值必須是正數。",
       "invalidMinimum": "最低要求值必須是正數。"
     }
+  },
+  "login": {
+    "welcome": "歡迎使用軌道地圖",
+    "connectWallet": "連接錢包或登錄以訪問獨家功能",
+    "signIn": "連接錢包 / 登錄",
+    "loading": "正在加載身份驗證..."
+  },
+  "teeZone": {
+    "title": "可信執行環境 (TEE) 區域",
+    "selectFeature": "選擇 TEE 功能",
+    "locationRegistration": "位置註冊",
+    "locationLookup": "位置查詢",
+    "heatmap": "隱私熱圖",
+    "visitAnalytics": "訪問分析"
+  },
+  "nillionLLM": {
+    "title": "Nillion LLM 聊天",
+    "inputPlaceholder": "輸入訊息...",
+    "send": "發送",
+    "processing": "處理中..."
+  },
+  "testAPI": {
+    "title": "無伺服器 API 測試",
+    "selectEndpoint": "選擇要測試的 API 端點"
   }
 }

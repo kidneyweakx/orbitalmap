@@ -6,6 +6,8 @@ import { ZKVerification } from './ZKVerification';
 import { TEEZone } from './TEEZone';
 import { NillionLLM } from './NillionLLM';
 import { TestAPI } from './TestAPI';
+import { UserProfile } from './UserProfile';
+import { useAuth } from '../providers/AuthContext';
 
 interface NavbarProps {
   toggleTheme: () => void;
@@ -16,6 +18,7 @@ interface NavbarProps {
 
 export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects }: NavbarProps) {
   const { t, i18n } = useTranslation();
+  const { isAuthenticated, login } = useAuth();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showToolbox, setShowToolbox] = useState(false);
   const [showZKVerification, setShowZKVerification] = useState(false);
@@ -115,6 +118,17 @@ export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, se
               </div>
             )}
           </div>
+          
+          {isAuthenticated ? (
+            <UserProfile />
+          ) : (
+            <button 
+              className="login-nav-button" 
+              onClick={login}
+            >
+              {t('navbar.login')}
+            </button>
+          )}
         </div>
       </div>
       
