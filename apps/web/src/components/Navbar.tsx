@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ThemeMode } from '../App';
 import '../App.css';
 
-export function Navbar() {
+interface NavbarProps {
+  toggleTheme: () => void;
+  currentTheme: ThemeMode;
+}
+
+export function Navbar({ toggleTheme, currentTheme }: NavbarProps) {
   const { t, i18n } = useTranslation();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
@@ -15,6 +21,13 @@ export function Navbar() {
     <div className="navbar">
       <div className="navbar-title">{t('navbar.title')}</div>
       <div className="navbar-controls">
+        <button 
+          className="theme-toggle-button" 
+          onClick={toggleTheme}
+          aria-label={currentTheme === 'dark' ? t('navbar.switchToLight') : t('navbar.switchToDark')}
+        >
+          {currentTheme === 'dark' ? '☀️' : '🌙'}
+        </button>
         <div className="language-selector">
           <button 
             className="language-button" 

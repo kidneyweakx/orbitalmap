@@ -1,7 +1,9 @@
 {
   "navbar": {
     "title": "Orbital Map",
-    "language": "Language"
+    "language": "Language",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
   },
   "locationModal": {
     "title": "Location Selection",
@@ -18,12 +20,15 @@
     "spotNamePlaceholder": "Spot name",
     "spotDescriptionPlaceholder": "Spot description (optional)",
     "save": "Save",
+    "saveSpot": "Save Spot",
     "cancel": "Cancel",
     "noSpots": "No private spots added yet",
     "delete": "Delete",
     "navigateHere": "Navigate here",
+    "viewOnMap": "View on map",
     "noDescription": "No description",
     "selectedLocation": "Selected location",
+    "noLocationSelected": "No location selected",
     "clickMapToAdd": "Click on the map to add a spot",
     "getCurrentLocation": "Get current location",
     "uploadImage": "Upload image",
@@ -31,6 +36,16 @@
     "imagePlaceholder": "No image selected",
     "locationError": "Could not get your location",
     "geolocationNotSupported": "Geolocation is not supported by your browser",
-    "uploadError": "Failed to upload image"
+    "uploadError": "Failed to upload image",
+    "rewardsNearby": "Rewards nearby",
+    "rewardsInfo": "Rewards",
+    "rewardsExplanation": "Discover rewards near your private spots on the map. The more spots you add, the more rewards you can find!",
+    "highValueReward": "High value reward",
+    "mediumValueReward": "Medium value reward",
+    "lowValueReward": "Low value reward",
+    "rewardFound": "Reward Found!",
+    "rewardDescription": "You've discovered a reward near one of your private spots. Collect it or explore more to find others.",
+    "collectReward": "Collect",
+    "closeReward": "Close"
   }
 }

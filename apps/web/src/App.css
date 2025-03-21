@@ -6,6 +6,9 @@
 
 body {
   overflow: hidden;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #root {
@@ -32,13 +35,15 @@ body {
   position: absolute;
   top: 80px;
   left: 20px;
-  background: white;
+  background: var(--card-background);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color);
   width: 350px;
   max-height: 80vh;
   overflow-y: auto;
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
 }
 
 .search-section {
@@ -50,19 +55,21 @@ body {
 .search-section input {
   flex: 1;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
 }
 
 .coordinates-section {
   margin-bottom: 16px;
   padding: 8px;
-  background: #f5f5f5;
+  background: var(--secondary-color);
   border-radius: 4px;
 }
 
 .spots-section {
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--section-border);
   padding-top: 16px;
 }
 
@@ -75,6 +82,7 @@ body {
 
 .spots-header h3 {
   margin: 0;
+  color: var(--header-color);
 }
 
 .add-spot-form {
@@ -86,8 +94,10 @@ body {
   width: 100%;
   padding: 8px;
   margin-bottom: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
 }
 
 .add-spot-form textarea {
@@ -102,19 +112,22 @@ body {
 
 .spot-item {
   padding: 12px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   margin-bottom: 8px;
+  background-color: var(--card-background);
+  color: var(--text-color);
 }
 
 .spot-item h4 {
   margin: 0 0 4px 0;
+  color: var(--header-color);
 }
 
 .spot-item p {
   margin: 0;
   font-size: 0.9em;
-  color: #666;
+  color: var(--description-color);
 }
 
 .spot-item .description {
@@ -124,16 +137,16 @@ body {
 
 button {
   padding: 8px 16px;
-  background: #0066cc;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color 0.2s;
 }
 
 button:hover {
-  background: #0052a3;
+  background: var(--primary-hover);
 }
 
 button:disabled {
@@ -191,23 +204,25 @@ button:disabled {
 }
 
 .location-modal {
-  background-color: white;
+  background-color: var(--modal-bg);
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px var(--shadow-color);
   max-width: 400px;
   width: 90%;
   text-align: center;
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .location-modal h2 {
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--header-color);
 }
 
 .location-modal p {
   margin-bottom: 24px;
-  color: #666;
+  color: var(--description-color);
 }
 
 .location-buttons {
@@ -228,14 +243,14 @@ button:disabled {
 }
 
 .delete-spot {
-  background: #ff4d4d;
+  background: var(--delete-btn-color);
   color: white;
   font-size: 12px;
   padding: 4px 8px;
 }
 
 .delete-spot:hover {
-  background: #e60000;
+  background: var(--delete-btn-hover);
 }
 
 .navigate-button {
@@ -289,7 +304,7 @@ button:disabled {
   left: 0;
   right: 0;
   height: 60px;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--navbar-bg);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -297,12 +312,13 @@ button:disabled {
   padding: 0 20px;
   z-index: 10;
   backdrop-filter: blur(5px);
+  transition: background-color 0.3s;
 }
 
 .navbar-title {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: var(--header-color);
 }
 
 .navbar-controls {
@@ -315,21 +331,22 @@ button:disabled {
 }
 
 .language-button {
-  background: transparent;
-  border: 1px solid #0066cc;
-  color: #0066cc;
+  background-color: var(--primary-color);
+  color: white;
   padding: 8px 16px;
+  transition: background-color 0.3s;
 }
 
 .language-menu {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
+  background-color: var(--card-background);
   border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px var(--shadow-color);
   width: 120px;
   z-index: 100;
+  transition: background-color 0.3s;
 }
 
 .language-menu button {
@@ -337,13 +354,15 @@ button:disabled {
   width: 100%;
   text-align: left;
   padding: 8px 12px;
-  background: transparent;
+  background: none;
   border: none;
-  color: #333;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .language-menu button:hover {
-  background: #f5f5f5;
+  background-color: var(--secondary-color);
 }
 
 /* Clicked coordinates styling */
@@ -453,13 +472,14 @@ button:disabled {
   flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
-  background: #f9f9f9;
+  background: var(--secondary-color);
   padding: 12px;
   border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .current-location-btn {
-  background: #4285F4;
+  background: var(--primary-color);
   color: white;
   display: flex;
   align-items: center;
@@ -467,10 +487,11 @@ button:disabled {
   gap: 8px;
   padding: 10px;
   font-weight: 500;
+  transition: background-color 0.3s;
 }
 
 .current-location-btn:hover {
-  background: #3367D6;
+  background: var(--primary-hover);
 }
 
 .current-location-btn::before {
@@ -479,22 +500,26 @@ button:disabled {
 
 .coordinates-display {
   font-family: monospace;
-  background: #f0f0f0;
+  background: var(--input-bg);
+  color: var(--input-text);
   padding: 8px;
   border-radius: 4px;
   font-size: 0.9em;
   text-align: center;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* Selected coordinates styling */
 .selected-coordinates {
-  background-color: #f0f7ff;
+  background-color: var(--secondary-color);
   padding: 10px;
   border-radius: 6px;
   margin-bottom: 15px;
-  border-left: 3px solid #4285F4;
+  border-left: 3px solid var(--primary-color);
   font-size: 0.9em;
   font-family: monospace;
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* Image upload section */
@@ -510,10 +535,11 @@ button:disabled {
   height: 150px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: var(--secondary-color);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.3s;
 }
 
 .image-preview img {
@@ -528,18 +554,20 @@ button:disabled {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: #f0f0f0;
-  color: #999;
+  background: var(--secondary-color);
+  color: var(--description-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .upload-image-btn {
-  background: #34a853;
+  background: var(--primary-color);
   color: white;
   padding: 10px;
+  transition: background-color 0.3s;
 }
 
 .upload-image-btn:hover {
-  background: #2a8940;
+  background: var(--primary-hover);
 }
 
 .upload-image-btn:disabled {
@@ -553,13 +581,16 @@ button:disabled {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
 }
 
 .spot-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px var(--shadow-color);
 }
 
 .spot-image {
@@ -576,7 +607,7 @@ button:disabled {
 
 .spot-content {
   padding: 12px;
-  background: white;
+  background: var(--card-background);
 }
 
 .spot-header {
@@ -586,12 +617,12 @@ button:disabled {
 .spot-header h4 {
   font-size: 16px;
   margin: 0;
-  color: #333;
+  color: var(--header-color);
 }
 
 .spot-card .description {
   font-size: 14px;
-  color: #666;
+  color: var(--description-color);
   margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -620,11 +651,11 @@ button:disabled {
 }
 
 .spot-card .delete-spot {
-  background: #EA4335;
+  background: var(--delete-btn-color);
 }
 
 .spot-card .delete-spot:hover {
-  background: #D33426;
+  background: var(--delete-btn-hover);
 }
 
 /* RWD updates for mobile */
@@ -667,4 +698,202 @@ button:disabled {
   .current-location-btn {
     padding: 8px;
   }
+}
+
+/* Reward marker styles */
+.reward-marker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.reward-marker:hover {
+  transform: scale(1.2);
+}
+
+/* Rewards info section */
+.rewards-info-section {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: var(--secondary-color);
+  border-radius: 8px;
+  border-left: 4px solid #ffcc00;
+}
+
+.rewards-info-section h3 {
+  margin-top: 0;
+  color: var(--header-color);
+}
+
+.reward-types {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.reward-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reward-emoji {
+  font-size: 20px;
+}
+
+/* Reward info popup */
+.reward-info-popup {
+  margin-top: 8px;
+  font-weight: bold;
+  color: #ff9500;
+}
+
+/* Reward info modal */
+.reward-info-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  padding: 20px;
+  background-color: var(--modal-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  z-index: 1001;
+  text-align: center;
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.reward-emoji-large {
+  font-size: 48px;
+  margin: 15px 0;
+  animation: bounce 1s infinite alternate;
+}
+
+.reward-info-modal button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background-color: #ff9500;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reward-info-modal button:hover {
+  background-color: #ff7b00;
+}
+
+.reward-info-modal button:last-child {
+  background-color: #f0f0f0;
+  color: #333;
+  margin-left: 10px;
+}
+
+.reward-info-modal button:last-child:hover {
+  background-color: #e0e0e0;
+}
+
+/* Animation for reward emoji */
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Add rewards count to spot cards */
+.spot-rewards-count {
+  color: #ff9500;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* ... existing media query code ... */
+  
+  .reward-info-modal {
+    width: 90%;
+    max-width: 300px;
+  }
+}
+
+/* Dark mode styles */
+:root {
+  --text-color: #333;
+  --background-color: #fff;
+  --card-background: #fff;
+  --border-color: #ddd;
+  --primary-color: #0066cc;
+  --primary-hover: #0052a3;
+  --secondary-color: #f5f5f5;
+  --shadow-color: rgba(0, 0, 0, 0.15);
+  --modal-bg: #fff;
+  --input-bg: #fff;
+  --input-text: #333;
+  --navbar-bg: #fff;
+  --header-color: #333;
+  --description-color: #666;
+  --delete-btn-color: #ff4d4d;
+  --delete-btn-hover: #e60000;
+  --form-border: #eee;
+  --section-border: #eee;
+}
+
+.dark-theme {
+  --text-color: #f0f0f0;
+  --background-color: #222;
+  --card-background: #2c2c2c;
+  --border-color: #444;
+  --primary-color: #4287f5;
+  --primary-hover: #5a95f5;
+  --secondary-color: #333;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --modal-bg: #2c2c2c;
+  --input-bg: #333;
+  --input-text: #f0f0f0;
+  --navbar-bg: #1c1c1c;
+  --header-color: #f0f0f0;
+  --description-color: #aaa;
+  --delete-btn-color: #f44336;
+  --delete-btn-hover: #d32f2f;
+  --form-border: #444;
+  --section-border: #444;
+}
+
+.theme-toggle-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme .theme-toggle-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }

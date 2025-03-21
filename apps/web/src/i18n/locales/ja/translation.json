@@ -1,12 +1,14 @@
 {
   "navbar": {
     "title": "オービタルマップ",
-    "language": "言語"
+    "language": "言語",
+    "switchToLight": "ライトモードに切り替え",
+    "switchToDark": "ダークモードに切り替え"
   },
   "locationModal": {
     "title": "位置選択",
     "prompt": "使用したい地図の位置を選択してください：",
-    "useCurrentLocation": "現在位置を使用する",
+    "useCurrentLocation": "現在地を使用する",
     "useDefaultLocation": "デフォルト位置を使用する（日本）"
   },
   "mapMenu": {
@@ -18,19 +20,32 @@
     "spotNamePlaceholder": "スポット名",
     "spotDescriptionPlaceholder": "スポットの説明（任意）",
     "save": "保存",
+    "saveSpot": "スポットを保存",
     "cancel": "キャンセル",
-    "noSpots": "まだプライベートスポットが追加されていません",
+    "noSpots": "プライベートスポットはまだ追加されていません",
     "delete": "削除",
     "navigateHere": "ここへ移動",
+    "viewOnMap": "地図で見る",
     "noDescription": "説明なし",
     "selectedLocation": "選択した位置",
-    "clickMapToAdd": "地図をクリックしてスポットを追加",
-    "getCurrentLocation": "現在位置を取得",
+    "noLocationSelected": "位置が選択されていません",
+    "clickMapToAdd": "スポットを追加するには地図をクリックしてください",
+    "getCurrentLocation": "現在地を取得",
     "uploadImage": "画像をアップロード",
     "uploading": "アップロード中...",
     "imagePlaceholder": "画像が選択されていません",
-    "locationError": "位置情報を取得できませんでした",
+    "locationError": "現在地を取得できませんでした",
     "geolocationNotSupported": "お使いのブラウザは位置情報をサポートしていません",
-    "uploadError": "画像のアップロードに失敗しました"
+    "uploadError": "画像のアップロードに失敗しました",
+    "rewardsNearby": "近くの報酬",
+    "rewardsInfo": "報酬",
+    "rewardsExplanation": "地図上のプライベートスポット近くの報酬を発見しましょう。追加するスポットが多いほど、見つけられる報酬も増えます！",
+    "highValueReward": "高価値報酬",
+    "mediumValueReward": "中価値報酬",
+    "lowValueReward": "低価値報酬",
+    "rewardFound": "報酬を発見！",
+    "rewardDescription": "プライベートスポットの近くで報酬を発見しました。これを集めるか、さらに探索して他の報酬を見つけることができます。",
+    "collectReward": "収集",
+    "closeReward": "閉じる"
   }
 }
