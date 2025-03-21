@@ -1226,9 +1226,9 @@ button:disabled {
 
 .verification-type-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
 }
 
 .verification-type-button {
@@ -1236,22 +1236,28 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--card-bg-color);
+  padding: 15px;
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .verification-type-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
 }
 
 .verification-type-button .emoji {
   font-size: 24px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.verification-type-button span:not(.emoji) {
+  font-size: 14px;
+  text-align: center;
 }
 
 .form-container {
@@ -1312,20 +1318,29 @@ button:disabled {
 
 .result {
   margin-top: 20px;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-align: center;
 }
 
 .result.success {
-  background-color: rgba(46, 204, 113, 0.1);
-  border: 1px solid rgba(46, 204, 113, 0.3);
-  color: #2ecc71;
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+  border-left: 4px solid var(--success);
 }
 
 .result.error {
-  background-color: rgba(231, 76, 60, 0.1);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background-color: rgba(var(--error-rgb), 0.1);
+  color: var(--error);
+  border-left: 4px solid var(--error);
+  text-align: left;
+  white-space: pre-line;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow-wrap: break-word;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .zk-menu-button {
@@ -1366,4 +1381,93 @@ button:disabled {
   --input-bg-color: #f5f5f5;
   --disabled-color: #bdc3c7;
   --primary-color-darker: #1a5276;
+}
+
+/* Add styles for the verification steps */
+.verification-steps {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+}
+
+.verification-steps .step {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.verification-steps .step:last-child {
+  margin-bottom: 0;
+}
+
+.verification-steps .step-number {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  color: white;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.verification-steps .step-text {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.verification-steps .step.active {
+  background-color: var(--accent-light);
+}
+
+.verification-steps .step.active .step-number {
+  background-color: var(--accent);
+}
+
+.verification-steps .step.active .step-text {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.verification-steps .step.completed .step-number {
+  background-color: var(--success);
+}
+
+.verification-steps .step.completed .step-text {
+  color: var(--success);
+}
+
+.verification-steps .step.error .step-number {
+  background-color: var(--error);
+}
+
+.verification-steps .step.error .step-text {
+  color: var(--error);
+}
+
+/* Form description and error message styles */
+.form-description {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-message {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: rgba(var(--error-rgb), 0.1);
+  border-left: 3px solid var(--error);
+  color: var(--error);
+  border-radius: 4px;
+  font-size: 14px;
 }

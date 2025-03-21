@@ -67,4 +67,83 @@ To use ZK verification in your own development:
 
 - [Noir Documentation](https://noir-lang.org/)
 - [Noir JWT Library](https://github.com/zkemail/noir-jwt)
-- [Noir Sample Circuits](https://github.com/noir-lang/noir/tree/master/examples) 
+- [Noir Sample Circuits](https://github.com/noir-lang/noir/tree/master/examples)
+
+# Zero-Knowledge Circuit Integration Guide
+
+This document explains how the Zero-Knowledge (ZK) verification is integrated into the web application using Noir circuits.
+
+## Circuit Structure
+
+The main dispatcher circuit (`main.nr`) handles five different proof types. Each proof has specific constraints:
+
+1. **Proof of Visit**
+   - Proves user visited a location without revealing exact coordinates
+   - Main constraint: `assert(x != 0)`
+   - Additional constraints in `proof_of_visit.nr`:
+     - Location hash matches
+     - Visit timestamp is within allowed time window
+
+2. **Reputation Proof**
+   - Proves user's reputation score is above a threshold
+   - Main constraint: `assert((x as i64) >= (y as i64))`
+   - Where `x` is actual score and `y` is threshold
+
+3. **Ownership Proof**
+   - Proves token ownership without revealing exact balance
+   - Main constraint: `assert(x != 0)`
+   - Additional constraints in `ownership_proofs.nr`:
+     - Token balance >= minimum required
+
+4. **Trustless Commitment**
+   - Facilitates peer-to-peer commitments without a trusted third party
+   - Main constraint: `assert(x != 0)`
+   - Additional constraints in `trustless_commitments.nr`:
+     - Task commitment valid
+     - Deadline is in the future
+
+5. **Explorer Badge**
+   - Proves user has visited enough locations to earn a badge
+   - Main constraint: `assert(x != 0)`
+   - Additional constraints in `local_explorer_badge.nr`:
+     - JWT signature valid
+     - Visit count >= required minimum
+
+## Integration Details
+
+To generate a proof:
+
+1. The frontend calls into `ZKService.ts`, which prepares the inputs and handles conversions
+2. Inputs are normalized to integers and converted to BigInt
+3. The circuit is compiled from Noir to JSON and loaded from the `/public/circuits` directory
+4. The Noir backend (UltraHonkBackend) executes the circuit with the inputs
+5. The proof is generated and returned as a string
+
+To verify a proof:
+
+1. The proof data (proof and public inputs) is passed to the verification function
+2. The UltraHonkBackend verifies the proof cryptographically
+3. The result (true/false) is returned
+
+## Troubleshooting
+
+Common errors:
+
+- **"unwrap_throw" error**: Circuit constraints are not satisfied. Double-check that all input values satisfy the required conditions.
+- **Type errors**: Ensure all numeric inputs are normalized properly before converting to BigInt.
+- **Circuit loading errors**: Make sure the circuit JSON file is correctly copied to the `/public/circuits` directory.
+
+## Implementation Notes
+
+This is a simplified implementation for demonstration purposes. In a production environment:
+
+1. The circuits would be more complex with proper cryptographic hash functions
+2. The frontend would have more robust input validation
+3. A secure backend would handle sensitive operations
+4. The JWT verification in the Explorer Badge would be fully implemented
+
+## Testing
+
+Test each proof type with valid inputs first to ensure the basic flow works. Then test with invalid inputs to verify constraint checking works properly.
+
+For realistic testing of Proof of Visit, use coordinates that would hash to non-zero values and timestamps within the last 24 hours. 
