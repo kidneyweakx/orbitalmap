@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
-import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator';
+import { Reward } from '../utils/rewardGenerator';
+import { fetchRewardsAroundLocation } from '../utils/api';
 import { ThemeMode } from '../App';
 
 interface Spot {
@@ -144,38 +145,41 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
-  const handleAddSpot = () => {
-    if (!map || !newSpotName) return;
-
-    const spotCoordinates = addSpotPosition || 
-      (coordinates ? coordinates : [map.getCenter().lng, map.getCenter().lat]);
+  const handleAddSpot = async () => {
+    if (!addSpotPosition || !newSpotName) return;
     
-    const newSpotId = Date.now().toString();
+    const spotCoordinates = addSpotPosition;
+    const newSpotId = `spot-${Date.now()}`;
     
+    // Create new spot with proper typing
     const newSpot: Spot = {
       id: newSpotId,
       name: newSpotName,
       coordinates: [
         Number(spotCoordinates[0].toFixed(6)), 
         Number(spotCoordinates[1].toFixed(6))
-      ],
+      ] as [number, number],
       description: newSpotDescription,
       imageUrl: newSpotImageUrl || 'https://via.placeholder.com/150?text=Spot'
     };
 
     setSpots([...spots, newSpot]);
     
-    // Generate rewards around the new spot
-    const newRewards = generateRewardsAroundLocation(
-      [
-        Number(spotCoordinates[0].toFixed(6)), 
-        Number(spotCoordinates[1].toFixed(6))
-      ],
-      0.01,
-      Math.floor(Math.random() * 5) + 3, // 3-7 rewards
-      newSpotId
-    );
-    setRewards(prevRewards => [...prevRewards, ...newRewards]);
+    // Generate rewards around the new spot using the API
+    try {
+      const newRewards = await fetchRewardsAroundLocation(
+        [
+          Number(spotCoordinates[0].toFixed(6)), 
+          Number(spotCoordinates[1].toFixed(6))
+        ],
+        0.01,
+        Math.floor(Math.random() * 5) + 3, // 3-7 rewards
+        newSpotId
+      );
+      setRewards(prevRewards => [...prevRewards, ...newRewards]);
+    } catch (error) {
+      console.error('Failed to fetch rewards around location:', error);
+    }
     
     setIsAddingSpot(false);
     setNewSpotName('');
@@ -188,6 +192,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
       tempMarkerRef.current.remove();
       tempMarkerRef.current = null;
     }
+    
     onClearClickedPosition();
   };
 

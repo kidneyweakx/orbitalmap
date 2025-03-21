@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { useTranslation } from 'react-i18next'
+import './App.css'
+import { Reward } from './utils/rewardGenerator'
+import { rewardsToHeatmapFormat } from './utils/mapUtils'
+import { fetchMapRewards } from './utils/api'
 import { MapMenu } from './components/MapMenu'
 import { Navbar } from './components/Navbar'
-import { Reward, generateMapRewards, rewardsToHeatmapFormat } from './utils/rewardGenerator'
-import './App.css'
 
 // Create theme context
 export type ThemeMode = 'dark' | 'light';
@@ -157,20 +159,25 @@ function App() {
   };
 
   // Generate initial rewards based on map bounds
-  const generateInitialRewards = () => {
+  const generateInitialRewards = async () => {
     if (!map.current) return;
     
     const bounds = map.current.getBounds();
     if (!bounds) return;
     
-    const newRewards = generateMapRewards({
+    const boundsObj = {
       north: bounds.getNorth(),
       south: bounds.getSouth(),
       east: bounds.getEast(),
       west: bounds.getWest()
-    }, 50);
+    };
     
-    setRewards(newRewards);
+    try {
+      const newRewards = await fetchMapRewards(boundsObj, 10);
+      setRewards(newRewards);
+    } catch (error) {
+      console.error('Failed to fetch map rewards:', error);
+    }
   };
 
   // Update heatmap and reward markers when rewards change

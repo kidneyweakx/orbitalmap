@@ -1,12 +1,13 @@
-
 import { OpenAPIHono } from '@hono/zod-openapi'
-import { add_point } from './add_point'
-import { zk_tls } from './zk_tls'
+import { chat_route } from './nillion_llm'
+import { map_route } from './map_interaction'
+import { reward_route } from './reward_generator'
 
 const user = new OpenAPIHono()
 
 user
-  .route('/user', add_point)
-  .route('/user', zk_tls)
+  .route('/user', chat_route)
+  .route('/user', map_route)
+  .route('/user', reward_route)
 
 export { user }

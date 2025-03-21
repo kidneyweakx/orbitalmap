@@ -4,8 +4,12 @@ compatibility_date = "2024-03-15"
 
 compatibility_flags = [ "nodejs_compat" ]
 
-# [vars]
-# MY_VAR = "my-variable"
+[vars]
+# You need to set real values in .dev.vars for local development
+# and in the Cloudflare Dashboard for production
+NILAI_API_URL = ""
+NILAI_API_KEY = ""
+OPEN_METEO_API_URL = "https://api.open-meteo.com/v1/forecast"
 
 [[kv_namespaces]]
 binding = "cykv"
@@ -23,6 +27,6 @@ id = "4f154893d7814088ab9b76765c8df5a7"
 # [ai]
 # binding = "AI"
 
-# [observability]
-# enabled = true
-# head_sampling_rate = 1
+[observability]
+enabled = true
+head_sampling_rate = 1
