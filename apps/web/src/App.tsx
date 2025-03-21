@@ -8,6 +8,9 @@ import { MapMenu } from './components/MapMenu'
 import { Navbar } from './components/Navbar'
 import { Login } from './components/Login'
 import { useAuth } from './providers/AuthContext'
+import { ExplorationIndicator } from './components/ExplorationIndicator'
+import { BadgesModal } from './components/BadgesModal'
+import { validateRewardCollection, updateExplorationStats, generateRewardsAroundUser, ExplorationStats } from './utils/RewardSystem'
 
 // Create theme context
 export type ThemeMode = 'dark' | 'light';
@@ -31,6 +34,16 @@ function App() {
   const indicatorsRef = useRef<HTMLDivElement[]>([])
   const hoveredPositionRef = useRef<[number, number] | null>(null)
   const [showHoverEffects, setShowHoverEffects] = useState(false)
+  
+  // New state for exploration stats and badges
+  const [explorationStats, setExplorationStats] = useState<ExplorationStats>({
+    visitedRewardsCount: 0,
+    totalPossibleRewards: 0,
+    explorationIndex: 0,
+    collectedRewards: []
+  })
+  const [showBadgesModal, setShowBadgesModal] = useState(false)
+  const [hasNewBadges, setHasNewBadges] = useState(false)
   
   // Effect to initialize the map after successful login
   useEffect(() => {
@@ -101,6 +114,11 @@ function App() {
       if (rewards.length > 0) {
         const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
         showNearbyRewardIndicators(nearby);
+        
+        // If rewards are nearby, trigger reward validation
+        if (nearby.length > 0) {
+          validateAndCollectReward([lng, lat]);
+        }
       }
     });
 
@@ -198,8 +216,75 @@ function App() {
       // Use local generation instead of API
       const newRewards = generateMapRewards(boundsObj, 50);
       setRewards(newRewards);
+      
+      // Initialize exploration stats
+      setExplorationStats(prev => ({
+        ...prev,
+        totalPossibleRewards: newRewards.length
+      }));
     } catch (error) {
       console.error('Failed to generate map rewards:', error);
+    }
+  };
+
+  // Validate and collect rewards when user clicks near one
+  const validateAndCollectReward = async (position: [number, number]) => {
+    try {
+      const result = await validateRewardCollection(position, rewards);
+      
+      if (result.isValid && result.nearbyRewards.length > 0) {
+        // Mark rewards as collected
+        const collectedRewardIds = result.nearbyRewards.map(r => r.id);
+        
+        // Update rewards array to mark collected rewards as invisible
+        setRewards(prev => 
+          prev.map(reward => 
+            collectedRewardIds.includes(reward.id) 
+              ? { ...reward, isVisible: false } 
+              : reward
+          )
+        );
+        
+        // Update exploration stats
+        const updatedCollectedRewards = [
+          ...explorationStats.collectedRewards,
+          ...collectedRewardIds
+        ];
+        
+        const newStats = updateExplorationStats(
+          updatedCollectedRewards,
+          explorationStats.totalPossibleRewards
+        );
+        
+        setExplorationStats(newStats);
+        
+        // Check if user earned a new badge
+        const oldIndex = explorationStats.explorationIndex;
+        const newIndex = newStats.explorationIndex;
+        
+        // Check specific thresholds for badges (25%, 50%, 75%)
+        if (
+          (oldIndex < 25 && newIndex >= 25) || 
+          (oldIndex < 50 && newIndex >= 50) || 
+          (oldIndex < 75 && newIndex >= 75)
+        ) {
+          setHasNewBadges(true);
+        }
+        
+        // Generate new rewards around the user's position
+        if (result.nearbyRewards.length > 0) {
+          const newRewards = generateRewardsAroundUser(position, 3);
+          setRewards(prev => [...prev, ...newRewards]);
+          
+          // Update total possible rewards
+          setExplorationStats(prev => ({
+            ...prev,
+            totalPossibleRewards: prev.totalPossibleRewards + newRewards.length
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to validate reward:', error);
     }
   };
 
@@ -471,6 +556,17 @@ function App() {
     tooltipRef.current.innerHTML = content;
   };
 
+  // Display badges modal
+  const handleShowBadgesModal = () => {
+    setShowBadgesModal(true);
+    setHasNewBadges(false); // Reset new badges flag when viewed
+  };
+  
+  // Close badges modal
+  const handleCloseBadgesModal = () => {
+    setShowBadgesModal(false);
+  };
+
   // Only render the map interface when authenticated
   // Otherwise show the login screen
   return (
@@ -516,6 +612,21 @@ function App() {
               rewards={rewards}
               setRewards={setRewards}
               theme={themeMode}
+            />
+          )}
+          
+          {/* Exploration indicator */}
+          <ExplorationIndicator 
+            stats={explorationStats}
+            onShowDetails={handleShowBadgesModal}
+            hasBadges={hasNewBadges}
+          />
+          
+          {/* Badges modal */}
+          {showBadgesModal && (
+            <BadgesModal 
+              stats={explorationStats}
+              onClose={handleCloseBadgesModal}
             />
           )}
         </>

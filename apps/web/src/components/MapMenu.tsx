@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
 import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator';
 import { ThemeMode } from '../App';
+import { ZKLocationProofCard } from './ZKLocationProofCard';
 
 interface Spot {
   id: string;
@@ -11,6 +12,7 @@ interface Spot {
   description?: string;
   imageUrl?: string;
   tags: string[]; // Add tags field
+  hasVisitProof?: boolean; // New field to track if user has proven visit
 }
 
 // Available tag options
@@ -44,6 +46,8 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showRewardInfo, setShowRewardInfo] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+  const [showZKProofCard, setShowZKProofCard] = useState(false);
   
   // Effect to handle map clicks
   useEffect(() => {
@@ -132,15 +136,39 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
         </div>
         <div class="reward-info-popup">
           <p>${t('mapMenu.rewardsNearby')}: ${countRewardsForSpot(spot.id)}</p>
-        </div>`
+        </div>
+        <button class="visit-proof-button" data-spot-id="${spot.id}" style="
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-top: 10px;
+          width: 100%;
+        ">
+          ${spot.hasVisitProof ? t('mapMenu.viewVisitProof') : t('mapMenu.createVisitProof')}
+        </button>`
       );
 
-      const marker = new mapboxgl.Marker({ color: '#0066cc' })
+      const marker = new mapboxgl.Marker({ color: spot.hasVisitProof ? '#FFD700' : '#0066cc' })
         .setLngLat(spot.coordinates)
         .setPopup(popup)
         .addTo(map);
 
       markersRef.current[spot.id] = marker;
+      
+      // Add event listener to the popup after it's added to the DOM
+      popup.on('open', () => {
+        setTimeout(() => {
+          const proofButton = document.querySelector(`.visit-proof-button[data-spot-id="${spot.id}"]`);
+          if (proofButton) {
+            proofButton.addEventListener('click', () => {
+              handleShowZKProof(spot);
+            });
+          }
+        }, 10);
+      });
     });
 
     return () => {
@@ -372,6 +400,32 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     ? spots.filter(spot => spot.tags.includes(activeTag))
     : spots;
 
+  // Show ZK proof card for the selected spot
+  const handleShowZKProof = (spot: Spot) => {
+    setSelectedSpot(spot);
+    setShowZKProofCard(true);
+  };
+  
+  // Handle successful proof generation
+  const handleProofGenerated = (isValid: boolean) => {
+    if (isValid && selectedSpot) {
+      // Update spot to mark it as having a visit proof
+      setSpots(prev => 
+        prev.map(spot => 
+          spot.id === selectedSpot.id 
+            ? { ...spot, hasVisitProof: true } 
+            : spot
+        )
+      );
+      
+      // Close the ZK proof card after a short delay
+      setTimeout(() => {
+        setShowZKProofCard(false);
+        setSelectedSpot(null);
+      }, 2000);
+    }
+  };
+
   return (
     <>
       {/* Hamburger menu button */}
@@ -542,6 +596,32 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             <p>{t('mapMenu.rewardDescription')}</p>
             <button onClick={() => handleCollectReward(selectedReward.id)}>{t('mapMenu.collectReward')}</button>
             <button onClick={() => setShowRewardInfo(false)}>{t('mapMenu.closeReward')}</button>
+          </div>
+        )}
+        
+        {/* ZK Location Proof Card */}
+        {showZKProofCard && selectedSpot && (
+          <div className="zk-proof-container">
+            <ZKLocationProofCard
+              locationName={selectedSpot.name}
+              locationCoordinates={selectedSpot.coordinates}
+              onProofGenerated={handleProofGenerated}
+            />
+            <button 
+              className="close-proof-card"
+              onClick={() => setShowZKProofCard(false)}
+              style={{
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                marginTop: '10px'
+              }}
+            >
+              {t('common.close')}
+            </button>
           </div>
         )}
       </div>

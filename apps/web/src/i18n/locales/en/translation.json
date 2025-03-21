@@ -204,7 +204,67 @@
     "closeReward": "Close",
     "selectTags": "Select categories",
     "nearbyRewardsFound": "{{count}} rewards nearby",
-    "checkNearbyRewards": "Hover over the map to see rewards"
+    "checkNearbyRewards": "Hover over the map to see rewards",
+    "viewVisitProof": "View Visit Proof",
+    "createVisitProof": "Create Visit Proof",
+    "verified": "Verified",
+    "visitProofSuccess": "Visit proof successfully created!",
+    "visitProofFailed": "Failed to create visit proof",
+    "title": "Map Menu",
+    "mySpots": "My Spots"
+  },
+  "exploration": {
+    "indicator": "Exploration",
+    "rewardsCollected": "Rewards collected",
+    "totalRewards": "Total rewards",
+    "newBadgeEarned": "New badge earned!",
+    "exploreMore": "Explore more to earn rewards"
+  },
+  "badges": {
+    "title": "Badges & Rewards",
+    "exploreBadges": "Badges",
+    "stats": "Stats",
+    "noBadgesYet": "No badges earned yet",
+    "exploreMore": "Explore more locations! You need at least {{required}}% exploration to earn a badge",
+    "badgeDescription": "This badge recognizes your exploration achievements",
+    "mintBadge": "Mint Badge as NFT",
+    "poapTitle": "Explorer POAP",
+    "poapDescription": "Proof of Attendance Protocol token for active explorers",
+    "claimPoap": "Claim POAP",
+    "noPoapYet": "No POAP available yet",
+    "poapRequirement": "Requires {{required}}% exploration to claim",
+    "explorationIndex": "Exploration Index",
+    "rewardsCollected": "Rewards Collected",
+    "totalPossibleRewards": "Total Possible Rewards",
+    "copySuccess": "Link copied to clipboard!",
+    "copyFailed": "Failed to copy link"
+  },
+  "zkLocationProof": {
+    "coordinates": "Lat: {{lat}}, Lng: {{lng}}",
+    "zkInfo": "Zero-Knowledge Location Proof",
+    "zkExplainer": "This proof verifies your visit without revealing your exact location data or timestamps to anyone",
+    "generating": "Generating proof...",
+    "verifying": "Verifying proof...",
+    "success": "Visit verified! ✅",
+    "invalidProof": "Invalid proof. Please try again.",
+    "error": "Error creating proof",
+    "unknownError": "Unknown error occurred",
+    "ready": "Ready to generate proof",
+    "generateProof": "Generate Visit Proof",
+    "regenerateProof": "Regenerate Proof",
+    "tryAgain": "Try Again",
+    "processing": "Processing..."
+  },
+  "common": {
+    "loading": "Loading...",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "success": "Success!",
+    "error": "Error"
   },
   "tags": {
     "food": "Food",
@@ -212,7 +272,8 @@
     "nature": "Nature",
     "shopping": "Shopping",
     "culture": "Culture",
-    "other": "Other"
+    "other": "Other",
+    "all": "All"
   },
   "app": {
     "title": "OrbitalMap - Discover Hidden Rewards",
