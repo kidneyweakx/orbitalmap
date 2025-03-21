@@ -175,7 +175,10 @@
       "jwt": "JWT令牌不能為空，才能生成有效的探險者徽章證明。",
       "visitTime": "訪問時間必須在過去24小時內。",
       "deadline": "截止時間必須在未來。",
-      "requiredVisits": "所需訪問次數必須大於零。"
+      "requiredVisits": "所需訪問次數必須大於零。",
+      "invalidScore": "分數必須是正數。",
+      "invalidThreshold": "閾值必須是正數。",
+      "invalidMinimum": "最低要求值必須是正數。"
     }
   }
 }

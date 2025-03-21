@@ -38,12 +38,12 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
     visitTimestamp: '1649700000',
     
     // Reputation Proof defaults (based on reputation_proofs.nr test)
-    actualScore: '95',
+    actualScore: '100',
     threshold: '80',
     
     // Ownership Proof defaults (based on ownership_proofs.nr test)
-    tokenBalance: '5000',
-    minRequired: '1000',
+    tokenBalance: '42',
+    minRequired: '10',
     
     // Commitment Proof defaults (based on trustless_commitments.nr test)
     taskDescription: 'Complete the hackathon project',
@@ -71,10 +71,10 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
       latitude: '37.123456',
       longitude: '-122.987654',
       visitTimestamp: '1649700000',
-      actualScore: '95',
+      actualScore: '100',
       threshold: '80',
-      tokenBalance: '5000',
-      minRequired: '1000',
+      tokenBalance: '42',
+      minRequired: '10',
       taskDescription: 'Complete the hackathon project',
       deadline: '1650000000',
       jwtToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aXNpdGVkX3BsYWNlcyI6MTUsImV4cCI6MTY4MDAwMDAwMCwiaWF0IjoxNTE2MjM5MDIyfQ',
@@ -154,14 +154,14 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
           break;
         case VerificationType.REPUTATION:
           proof = await generateReputationProof(
-            parseInt(formData.actualScore),
-            parseInt(formData.threshold)
+            Math.min(parseInt(formData.actualScore), 100),
+            Math.min(parseInt(formData.threshold), 100)
           );
           break;
         case VerificationType.OWNERSHIP:
           proof = await generateOwnershipProof(
-            parseInt(formData.tokenBalance),
-            parseInt(formData.minRequired)
+            Math.min(parseInt(formData.tokenBalance), 100),
+            Math.min(parseInt(formData.minRequired), 100)
           );
           break;
         case VerificationType.COMMITMENT:
@@ -173,7 +173,7 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
         case VerificationType.EXPLORER_BADGE:
           proof = await generateExplorerBadgeProof(
             formData.jwtToken,
-            parseInt(formData.requiredVisits)
+            Math.min(parseInt(formData.requiredVisits), 100)
           );
           break;
         default:
@@ -181,6 +181,7 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
       }
       
       setVerifyStep('verifying_proof');
+      console.log('Proof object before verification:', proof);
       const verified = await verifyProof(proof);
       
       setVerifyStep('complete');
@@ -224,6 +225,12 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
           errorMessage = t('zkVerification.zkErrors.deadline');
         } else if (fullMessage.includes('zkErrors.requiredVisits')) {
           errorMessage = t('zkVerification.zkErrors.requiredVisits');
+        } else if (fullMessage.includes('zkErrors.invalidScore')) {
+          errorMessage = t('zkVerification.zkErrors.invalidScore');
+        } else if (fullMessage.includes('zkErrors.invalidThreshold')) {
+          errorMessage = t('zkVerification.zkErrors.invalidThreshold');
+        } else if (fullMessage.includes('zkErrors.invalidMinimum')) {
+          errorMessage = t('zkVerification.zkErrors.invalidMinimum');
         } else {
           // Use the original error message if we can't identify a specific pattern
           errorMessage = fullMessage;

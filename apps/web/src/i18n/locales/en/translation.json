@@ -43,7 +43,10 @@
       "jwt": "JWT token cannot be empty for a valid Explorer Badge proof.",
       "visitTime": "Visit time must be within the last 24 hours.",
       "deadline": "Deadline must be in the future.",
-      "requiredVisits": "Required visits must be greater than zero."
+      "requiredVisits": "Required visits must be greater than zero.",
+      "invalidScore": "Score must be a positive number.",
+      "invalidThreshold": "Threshold must be a positive number.",
+      "invalidMinimum": "Minimum required value must be a positive number."
     },
     "proof_of_visitDescription": "Prove you visited a specific location without revealing your exact coordinates. The proof only confirms your presence at a location within a specific time window.",
     "reputationDescription": "Prove your reputation score is above a threshold without revealing your exact score. This can be used for access control to exclusive areas.",
