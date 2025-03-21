@@ -22,6 +22,15 @@
     "noSpots": "まだプライベートスポットが追加されていません",
     "delete": "削除",
     "navigateHere": "ここへ移動",
-    "noDescription": "説明なし"
+    "noDescription": "説明なし",
+    "selectedLocation": "選択した位置",
+    "clickMapToAdd": "地図をクリックしてスポットを追加",
+    "getCurrentLocation": "現在位置を取得",
+    "uploadImage": "画像をアップロード",
+    "uploading": "アップロード中...",
+    "imagePlaceholder": "画像が選択されていません",
+    "locationError": "位置情報を取得できませんでした",
+    "geolocationNotSupported": "お使いのブラウザは位置情報をサポートしていません",
+    "uploadError": "画像のアップロードに失敗しました"
   }
 }

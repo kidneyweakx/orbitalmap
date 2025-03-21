@@ -11,6 +11,7 @@ function App() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const [showLocationModal, setShowLocationModal] = useState(true)
+  const [clickedPosition, setClickedPosition] = useState<[number, number] | null>(null)
   
   // Debug i18n
   useEffect(() => {
@@ -33,6 +34,12 @@ function App() {
       center: center,
       zoom: 9
     })
+
+    // Add map click event handler
+    map.current.on('click', (e) => {
+      const { lng, lat } = e.lngLat;
+      setClickedPosition([lng, lat]);
+    });
   }
 
   const handleUseCurrentLocation = () => {
@@ -61,6 +68,11 @@ function App() {
     setShowLocationModal(false)
   }
 
+  // Reset clicked position
+  const handleClearClickedPosition = () => {
+    setClickedPosition(null);
+  }
+
   useEffect(() => {
     // Map will be initialized after user chooses location option
     return () => {
@@ -72,7 +84,13 @@ function App() {
     <div className="app-container">
       <Navbar />
       <div ref={mapContainer} className="map-container" />
-      {!showLocationModal && <MapMenu map={map.current} />}
+      {!showLocationModal && (
+        <MapMenu 
+          map={map.current} 
+          clickedPosition={clickedPosition}
+          onClearClickedPosition={handleClearClickedPosition}
+        />
+      )}
       
       {showLocationModal && (
         <div className="location-modal-overlay">

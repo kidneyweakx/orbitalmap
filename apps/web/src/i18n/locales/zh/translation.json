@@ -22,6 +22,15 @@
     "noSpots": "尚未添加任何私密景點",
     "delete": "刪除",
     "navigateHere": "前往此處",
-    "noDescription": "無描述"
+    "noDescription": "無描述",
+    "selectedLocation": "選擇的位置",
+    "clickMapToAdd": "點擊地圖添加景點",
+    "getCurrentLocation": "取得目前位置",
+    "uploadImage": "上傳圖片",
+    "uploading": "上傳中...",
+    "imagePlaceholder": "尚未選擇圖片",
+    "locationError": "無法獲取您的位置",
+    "geolocationNotSupported": "您的瀏覽器不支持地理定位",
+    "uploadError": "圖片上傳失敗"
   }
 }
