@@ -89,7 +89,7 @@ function App() {
       // Check for nearby rewards at the clicked position
       if (rewards.length > 0) {
         const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
-        showNearbyRewardIndicators([lng, lat], nearby);
+        showNearbyRewardIndicators( nearby);
       }
     });
 
@@ -273,7 +273,8 @@ function App() {
   }, [])
 
   // Show indicators for nearby rewards
-  const showNearbyRewardIndicators = (clickPosition: [number, number], nearby: Reward[]) => {
+  const showNearbyRewardIndicators = ( nearby: Reward[]) => {
+    
     // Clean up previous indicators
     cleanupIndicators();
     
