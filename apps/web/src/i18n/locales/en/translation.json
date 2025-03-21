@@ -8,7 +8,9 @@
     "hideRewards": "Hide rewards on hover",
     "zkVerification": "ZK Verification",
     "toolbox": "Toolbox",
-    "teeZone": "TEE Zone"
+    "teeZone": "TEE Zone",
+    "nillionLLM": "Nillion LLM",
+    "testAPI": "API Test"
   },
   "teeZone": {
     "title": "Trusted Execution Environment (TEE) Zone",
@@ -45,6 +47,40 @@
     "peakHour": "Peak Hour",
     "heatmapVisualizationTitle": "Heatmap Visualization",
     "rawResponse": "Raw Response"
+  },
+  "nillionLLM": {
+    "title": "Nillion LLM Chat",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "processing": "Processing..."
+  },
+  "testAPI": {
+    "title": "Serverless API Testing",
+    "selectEndpoint": "Select an API endpoint to test",
+    "travelRecommendation": "Travel Recommendation",
+    "explorationRecommendation": "Exploration Recommendation",
+    "mapboxInteraction": "Mapbox Interaction",
+    "validateReward": "Validate Reward",
+    "travelRecommendationTitle": "Travel Recommendation API",
+    "explorationRecommendationTitle": "Exploration Recommendation API",
+    "mapboxInteractionTitle": "Mapbox Interaction API",
+    "validateRewardTitle": "Validate Reward API",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "weather": "Weather",
+    "interests": "Interests (comma separated)",
+    "currentLocation": "Current Location",
+    "rewardCoordinates": "Reward Coordinates",
+    "hotspotCoordinates": "Hotspot Coordinates",
+    "maxDistance": "Max Distance (degrees)",
+    "query": "Natural Language Query",
+    "getRecommendation": "Get Recommendation",
+    "sendQuery": "Send Query",
+    "validateReward": "Validate Reward",
+    "processing": "Processing...",
+    "back": "Back",
+    "response": "API Response",
+    "noResponse": "No response yet. Submit the form to see results."
   },
   "zkVerification": {
     "title": "Zero-Knowledge Verification",
