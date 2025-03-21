@@ -1,0 +1,28 @@
+name = "serverless"
+main = "src/index.ts"
+compatibility_date = "2024-03-15"
+
+compatibility_flags = [ "nodejs_compat" ]
+
+# [vars]
+# MY_VAR = "my-variable"
+
+[[kv_namespaces]]
+binding = "cykv"
+id = "4f154893d7814088ab9b76765c8df5a7"
+
+# [[r2_buckets]]
+# binding = "MY_BUCKET"
+# bucket_name = "my-bucket"
+
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-database"
+# database_id = ""
+
+# [ai]
+# binding = "AI"
+
+# [observability]
+# enabled = true
+# head_sampling_rate = 1
