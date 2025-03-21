@@ -8,8 +8,8 @@
   "locationModal": {
     "title": "位置選択",
     "prompt": "使用したい地図の位置を選択してください：",
-    "useCurrentLocation": "現在地を使用する",
-    "useDefaultLocation": "デフォルト位置を使用する（日本）"
+    "useCurrentLocation": "現在地を使用",
+    "useDefaultLocation": "デフォルト位置（日本）を使用"
   },
   "mapMenu": {
     "searchPlaceholder": "場所を検索...",
@@ -23,29 +23,39 @@
     "saveSpot": "スポットを保存",
     "cancel": "キャンセル",
     "noSpots": "プライベートスポットはまだ追加されていません",
+    "noSpotsWithTag": "このタグのスポットはありません",
     "delete": "削除",
-    "navigateHere": "ここへ移動",
+    "navigateHere": "ここに移動",
     "viewOnMap": "地図で見る",
     "noDescription": "説明なし",
-    "selectedLocation": "選択した位置",
-    "noLocationSelected": "位置が選択されていません",
-    "clickMapToAdd": "スポットを追加するには地図をクリックしてください",
+    "selectedLocation": "選択された場所",
+    "noLocationSelected": "場所が選択されていません",
+    "clickMapToAdd": "地図をクリックしてスポットを追加",
     "getCurrentLocation": "現在地を取得",
     "uploadImage": "画像をアップロード",
     "uploading": "アップロード中...",
     "imagePlaceholder": "画像が選択されていません",
-    "locationError": "現在地を取得できませんでした",
+    "locationError": "位置情報を取得できません",
     "geolocationNotSupported": "お使いのブラウザは位置情報をサポートしていません",
     "uploadError": "画像のアップロードに失敗しました",
     "rewardsNearby": "近くの報酬",
-    "rewardsInfo": "報酬",
-    "rewardsExplanation": "地図上のプライベートスポット近くの報酬を発見しましょう。追加するスポットが多いほど、見つけられる報酬も増えます！",
-    "highValueReward": "高価値報酬",
-    "mediumValueReward": "中価値報酬",
-    "lowValueReward": "低価値報酬",
-    "rewardFound": "報酬を発見！",
-    "rewardDescription": "プライベートスポットの近くで報酬を発見しました。これを集めるか、さらに探索して他の報酬を見つけることができます。",
+    "rewardsInfo": "報酬情報",
+    "rewardsExplanation": "プライベートスポットの近くで報酬を発見します。スポットを追加するほど、より多くの報酬が見つかります！",
+    "highValueReward": "高価値の報酬",
+    "mediumValueReward": "中価値の報酬",
+    "lowValueReward": "低価値の報酬",
+    "rewardFound": "報酬を発見しました！",
+    "rewardDescription": "プライベートスポットの近くで報酬を見つけました。収集するか、探索を続けてさらに報酬を見つけましょう。",
     "collectReward": "収集",
-    "closeReward": "閉じる"
+    "closeReward": "閉じる",
+    "selectTags": "カテゴリーを選択"
+  },
+  "tags": {
+    "food": "食事",
+    "photo": "撮影スポット",
+    "nature": "自然",
+    "shopping": "ショッピング",
+    "culture": "文化",
+    "other": "その他"
   }
 }

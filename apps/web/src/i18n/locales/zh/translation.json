@@ -23,6 +23,7 @@
     "saveSpot": "保存地點",
     "cancel": "取消",
     "noSpots": "尚未添加私人地點",
+    "noSpotsWithTag": "沒有使用此標籤的地點",
     "delete": "刪除",
     "navigateHere": "導航至此",
     "viewOnMap": "在地圖上查看",
@@ -46,6 +47,15 @@
     "rewardFound": "發現獎勵！",
     "rewardDescription": "您在私人地點附近發現了一個獎勵。收集它或繼續探索尋找更多獎勵。",
     "collectReward": "收集",
-    "closeReward": "關閉"
+    "closeReward": "關閉",
+    "selectTags": "選擇分類"
+  },
+  "tags": {
+    "food": "美食",
+    "photo": "攝影點",
+    "nature": "自然景觀",
+    "shopping": "購物",
+    "culture": "文化",
+    "other": "其他"
   }
 }

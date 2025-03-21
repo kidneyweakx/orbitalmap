@@ -3,9 +3,7 @@ import { useTranslation } from 'react-i18next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './App.css'
-import { Reward } from './utils/rewardGenerator'
-import { rewardsToHeatmapFormat } from './utils/mapUtils'
-import { fetchMapRewards } from './utils/api'
+import { Reward, generateMapRewards, rewardsToHeatmapFormat } from './utils/rewardGenerator'
 import { MapMenu } from './components/MapMenu'
 import { Navbar } from './components/Navbar'
 
@@ -173,10 +171,11 @@ function App() {
     };
     
     try {
-      const newRewards = await fetchMapRewards(boundsObj, 10);
+      // Use local generation instead of API
+      const newRewards = generateMapRewards(boundsObj, 50);
       setRewards(newRewards);
     } catch (error) {
-      console.error('Failed to fetch map rewards:', error);
+      console.error('Failed to generate map rewards:', error);
     }
   };
 

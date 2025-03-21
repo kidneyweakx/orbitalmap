@@ -30,23 +30,18 @@ export const rewardColors = {
   [RewardValue.Low]: [52, 199, 89, 150]      // Green with transparency
 };
 
-// Create a seed-based noise generator
-const noise2D = createNoise2D(Math.random);
+// Initialize noise generator with random seed
+const noise2D = createNoise2D();
 
-/**
- * Generate a random reward value based on a noise value
- * @param noiseValue A noise value between -1 and 1
- */
-export function getRewardValueFromNoise(noiseValue: number): RewardValue {
-  // Map noise value (-1 to 1) to 0-1 range
-  const mappedValue = (noiseValue + 1) / 2;
-  
-  if (mappedValue > 0.8) {
-    return RewardValue.High; // 20% chance high value
-  } else if (mappedValue > 0.5) {
-    return RewardValue.Medium; // 30% chance medium value
+// Get reward value based on noise
+function getRewardValueFromNoise(noiseValue: number): RewardValue {
+  // Higher noise values are rarer, so they should be high-value rewards
+  if (noiseValue > 0.7) {
+    return RewardValue.High;
+  } else if (noiseValue > 0.3) {
+    return RewardValue.Medium;
   } else {
-    return RewardValue.Low; // 50% chance low value
+    return RewardValue.Low;
   }
 }
 

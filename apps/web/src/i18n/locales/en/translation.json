@@ -23,6 +23,7 @@
     "saveSpot": "Save Spot",
     "cancel": "Cancel",
     "noSpots": "No private spots added yet",
+    "noSpotsWithTag": "No spots with this tag",
     "delete": "Delete",
     "navigateHere": "Navigate here",
     "viewOnMap": "View on map",
@@ -46,6 +47,15 @@
     "rewardFound": "Reward Found!",
     "rewardDescription": "You've discovered a reward near one of your private spots. Collect it or explore more to find others.",
     "collectReward": "Collect",
-    "closeReward": "Close"
+    "closeReward": "Close",
+    "selectTags": "Select categories"
+  },
+  "tags": {
+    "food": "Food",
+    "photo": "Photo",
+    "nature": "Nature",
+    "shopping": "Shopping",
+    "culture": "Culture",
+    "other": "Other"
   }
 }
