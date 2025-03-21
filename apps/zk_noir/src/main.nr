@@ -2,6 +2,7 @@ mod proof_of_visit;
 mod reputation_proofs;
 mod ownership_proofs;
 mod trustless_commitments;
+mod local_explorer_badge;
 
 // Main function that dispatches to the different proof types
 fn main(choice: Field, x: Field, y: Field) {
@@ -18,6 +19,9 @@ fn main(choice: Field, x: Field, y: Field) {
         assert(x != 0);
     } else if choice == 4 {
         // Trustless Commitment
+        assert(x != 0);
+    } else if choice == 5 {
+        // Local Explorer Badge (JWT-based)
         assert(x != 0);
     } else {
         assert(false); // Invalid choice
@@ -41,9 +45,12 @@ fn test_main() {
     // Test Trustless Commitment dispatcher
     main(4, 42, 0);
     
+    // Test Local Explorer Badge dispatcher
+    main(5, 42, 0);
+    
     // Uncomment to test failure cases:
     // Invalid choice
-    // main(5, 42, 0);
+    // main(6, 42, 0);
     
     // Reputation threshold not met
     // main(2, 70, 80);

@@ -1,6 +1,6 @@
 # ZK Noir Proofs
 
-This project implements four privacy-preserving zero-knowledge proof mechanisms using Noir. These proofs can be integrated into applications to enhance privacy while maintaining verifiability.
+This project implements five privacy-preserving zero-knowledge proof mechanisms using Noir. These proofs can be integrated into applications to enhance privacy while maintaining verifiability.
 
 ## Features
 
@@ -28,11 +28,19 @@ Facilitates peer-to-peer commitments without requiring a central trusted party.
 - Deposit verification
 - Completion verification with deadline enforcement
 
+### 5. Local Explorer Badge (JWT-based)
+Enables users to prove they've visited multiple locations to earn explorer badges without revealing specific visit details.
+- JWT signature verification
+- Threshold-based badge verification
+- Tiered rewards based on visit counts
+- Special location unlocking
+
 ## Getting Started
 
 ### Prerequisites
 - [Noir](https://noir-lang.org/) installed
 - Basic understanding of zero-knowledge proofs
+- For JWT functionality: RSA public key for verification
 
 ### Building the Project
 ```bash
@@ -106,6 +114,20 @@ prove_task_completed(
 );
 ```
 
+### Local Explorer Badge
+```rust
+// Server-side: create JWT with visited places count
+// JWT payload: { "sub": "user123", "visited_places": 15, "exp": 1716182400 }
+
+// Client-side: generate proof of badge qualification
+// The proof verifies the JWT signature and proves `visited_places >= 10`
+// without revealing the exact number of visited places
+
+// Verifier-side
+// Only knows the user has visited at least 10 places, but not exactly how many
+verify_local_explorer_proof(jwt_data, pubkey_data);
+```
+
 ## Architecture
 
 Each proof mechanism is implemented in its own module:
@@ -113,6 +135,7 @@ Each proof mechanism is implemented in its own module:
 - `reputation_proofs.nr`
 - `ownership_proofs.nr`
 - `trustless_commitments.nr`
+- `local_explorer_badge.nr`
 
 The `main.nr` file provides a simple dispatcher to select which proof to generate or verify.
 
