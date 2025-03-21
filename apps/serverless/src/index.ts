@@ -11,8 +11,23 @@ function main() {
     openapi: '3.1.0',
     info: {
       version: '1.0.0',
-      title: 'worker',
+      title: 'OrbitalMap API',
+      description: 'API for the OrbitalMap serverless platform',
+      contact: {
+        name: 'API Support',
+        url: 'https://github.com/25trifecta/orbitalmap',
+      },
     },
+    servers: [
+      {
+        url: 'https://serverless.orbitalmap.com',
+        description: 'Production server',
+      },
+      {
+        url: 'http://localhost:8787',
+        description: 'Local development server',
+      },
+    ],
   })
 
   app.get('/docs', swaggerUI({ url: openapi_documentation_route }))
@@ -31,8 +46,10 @@ function main() {
     .route('/', admin)
     .route('/', user)
 
-
   return app
 }
+
+// Add a helper script in package.json to export OpenAPI docs:
+// "export-openapi": "node -e \"const fs=require('fs'); const app=require('./.wrangler/tmp/bundle').default; const docs=app.getOpenAPIDocument(); fs.writeFileSync('openapi.json', JSON.stringify(docs, null, 2));\""
 
 export default main()

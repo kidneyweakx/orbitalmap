@@ -1,4 +1,5 @@
-import { Hono } from 'hono'
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import type { HonoContext } from '../../types/hono_context'
 
 // Define the environment interface
 interface Env {
@@ -15,289 +16,473 @@ interface LLMResponse {
   }>;
 }
 
-const map_route = new Hono<{ Bindings: Env }>()
+// Define OpenAPI schemas
+const HotspotSchema = z.object({
+  name: z.string(),
+  longitude: z.number(),
+  latitude: z.number(),
+  type: z.string()
+});
+
+const MarkerSchema = z.object({
+  id: z.string(),
+  longitude: z.number(),
+  latitude: z.number(),
+  type: z.string(),
+  name: z.string().optional()
+});
+
+const UserLocationSchema = z.object({
+  longitude: z.number(),
+  latitude: z.number()
+});
+
+const MapDataSchema = z.object({
+  markers: z.array(MarkerSchema).optional()
+});
+
+// Travel recommendation schemas
+const TravelRecommendationRequestSchema = z.object({
+  longitude: z.number(),
+  latitude: z.number(),
+  weather: z.string(),
+  interests: z.array(z.string()),
+  hotspots: z.array(HotspotSchema).optional()
+});
+
+const RecommendationSchema = z.object({
+  place: z.string(),
+  description: z.string(),
+  itinerary: z.string()
+});
+
+const TravelRecommendationResponseSchema = z.object({
+  recommendation: RecommendationSchema
+});
+
+// Exploration recommendation schemas
+const ExplorationRecommendationRequestSchema = z.object({
+  longitude: z.number(),
+  latitude: z.number(),
+  radius: z.number().optional(),
+  categories: z.array(z.string()).optional()
+});
+
+const ExplorationRecommendationResponseSchema = z.object({
+  points: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    distance: z.number(),
+    description: z.string(),
+    coordinates: z.tuple([z.number(), z.number()])
+  }))
+});
+
+// Mapbox interaction schemas
+const MapboxInteractionRequestSchema = z.object({
+  query: z.string(),
+  userLocation: UserLocationSchema,
+  mapData: MapDataSchema
+});
+
+const MapCommandSchema = z.object({
+  moveCamera: z.boolean().optional(),
+  targetLocation: z.object({
+    longitude: z.number(),
+    latitude: z.number()
+  }).optional(),
+  zoomLevel: z.number().optional(),
+  addMarkers: z.array(MarkerSchema).optional(),
+  removeMarkers: z.array(z.string()).optional(),
+  toggleLayers: z.array(z.string()).optional(),
+  rawResponse: z.string()
+});
+
+const MapboxInteractionResponseSchema = z.object({
+  response: z.string(),
+  commands: MapCommandSchema
+});
+
+// Error schema
+const ErrorResponseSchema = z.object({
+  error: z.string()
+});
+
+// Route definitions
+const travelRecommendationRoute = createRoute({
+  method: 'post',
+  path: '/travel-recommendation',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: TravelRecommendationRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: TravelRecommendationResponseSchema
+        }
+      },
+      description: 'Successfully generated travel recommendation'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema
+        }
+      },
+      description: 'Server error'
+    }
+  }
+});
+
+const explorationRecommendationRoute = createRoute({
+  method: 'post',
+  path: '/exploration-recommendation',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: ExplorationRecommendationRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: ExplorationRecommendationResponseSchema
+        }
+      },
+      description: 'Successfully generated exploration recommendations'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema
+        }
+      },
+      description: 'Server error'
+    }
+  }
+});
+
+const mapboxInteractionRoute = createRoute({
+  method: 'post',
+  path: '/mapbox-interaction',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: MapboxInteractionRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: MapboxInteractionResponseSchema
+        }
+      },
+      description: 'Successfully processed mapbox interaction'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema
+        }
+      },
+      description: 'Server error'
+    }
+  }
+});
+
+export const map_route = new OpenAPIHono<HonoContext>();
 
 // Travel recommendation endpoint
-map_route.post('/travel-recommendation', async (c) => {
+map_route.openapi(travelRecommendationRoute, async (c) => {
   try {
-    const body = await c.req.json();
-    const { longitude, latitude, weather, interests, hotspots } = body as {
-      longitude: number;
-      latitude: number;
-      weather: string;
-      interests: string[];
-      hotspots?: Array<{
-        name: string;
-        longitude: number;
-        latitude: number;
-        type: string;
-      }>;
-    };
+    const { longitude, latitude, weather, interests, hotspots } = await c.req.json();
 
     // Create prompt for travel recommendation
     const systemPrompt = `你是一個專業的 AI 旅行規劃師，能根據天氣、用戶興趣和地圖數據推薦最佳目的地。  
 請根據：
 - 用戶當前位置（${longitude}, ${latitude}）
 - 今日天氣狀況（${weather}）
-- 用戶興趣標籤（${interests.join(', ')}）
-- 獎勵機會熱點（${JSON.stringify(hotspots || [])}）
+- 用戶興趣：${interests.join(', ')}
+${hotspots && hotspots.length > 0 ? `- 附近的熱點：${hotspots.map(h => h.name).join(', ')}` : ''}
+  
+提供最佳旅遊建議，包括：
+1. 推薦地點名稱
+2. 描述（簡短介紹這個地點，為什麼適合當前情況）
+3. 行程建議（具體時間安排）
+  
+請以 JSON 格式輸出，包含 place（地點名稱）、description（描述）和 itinerary（行程）三個欄位。`;
 
-推薦 1 個最佳探索地點，並提供一個簡單的行程建議（包含建議時間和活動）。`;
-
-    const response = await fetch(
-      `${c.env.NILAI_API_URL}/v1/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${c.env.NILAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/Llama-3.1-8B-Instruct',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: '請給我今天的推薦行程。' }
-          ],
-          temperature: 0.3,
-        }),
-      }
-    );
-
-    const data = await response.json() as LLMResponse;
+    // Call Nillion LLM
+    const llmResponse = await callNillionLLM(c.env.NILAI_API_URL, c.env.NILAI_API_KEY, systemPrompt, 'explain your travel recommendation');
     
-    // Extract recommendation from LLM response
-    const recommendationText = data.choices?.[0]?.message?.content || '';
-    
-    // Parse the text to extract place and description
-    const placeParts = recommendationText.split('\n');
-    const place = placeParts[0]?.replace(/^[^a-zA-Z0-9\u4e00-\u9fa5]+/, '') || '無推薦地點';
-    const description = placeParts.slice(1).join('\n');
+    if (!llmResponse || !llmResponse.choices || !llmResponse.choices[0]?.message?.content) {
+      return c.json({ error: 'Failed to generate travel recommendation' }, 500);
+    }
 
-    return c.json({
-      recommendation: {
-        place,
-        description,
-        itinerary: recommendationText,
+    try {
+      // Extract JSON from response
+      const contentText = llmResponse.choices[0].message.content;
+      const jsonMatch = contentText.match(/```json\n([\s\S]*?)\n```/) || contentText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const recommendationJson = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        return c.json({ recommendation: recommendationJson });
+      } else {
+        // Fallback to manually parsing if no JSON format is found
+        const lines = contentText.split('\n');
+        let place = '';
+        let description = '';
+        let itinerary = '';
+        
+        for (const line of lines) {
+          if (line.startsWith('地點') || line.startsWith('推薦地點') || line.toLowerCase().includes('place')) {
+            place = line.split('：')[1] || line.split(':')[1] || '';
+          } else if (line.startsWith('描述') || line.toLowerCase().includes('description')) {
+            description = line.split('：')[1] || line.split(':')[1] || '';
+          } else if (line.startsWith('行程') || line.toLowerCase().includes('itinerary')) {
+            itinerary = line.split('：')[1] || line.split(':')[1] || '';
+          }
+        }
+        
+        return c.json({
+          recommendation: {
+            place: place.trim(),
+            description: description.trim(),
+            itinerary: itinerary.trim()
+          }
+        });
       }
-    });
+    } catch (error) {
+      console.error('Error parsing recommendation:', error);
+      
+      // Return a simplified version of the raw response
+      const content = llmResponse.choices[0].message.content;
+      return c.json({
+        recommendation: {
+          place: 'Custom Recommendation',
+          description: content.slice(0, 100) + '...',
+          itinerary: 'Please see description for details.'
+        }
+      });
+    }
   } catch (error) {
-    console.error('Travel recommendation error:', error);
-    return c.json(
-      { error: 'Failed to generate travel recommendation' },
-      { status: 500 }
-    );
+    console.error('Error generating travel recommendation:', error);
+    return c.json({ error: 'Failed to generate travel recommendation' }, 500);
   }
 });
 
 // Exploration recommendation endpoint
-map_route.post('/exploration-recommendation', async (c) => {
+map_route.openapi(explorationRecommendationRoute, async (c) => {
   try {
-    const body = await c.req.json();
-    const { longitude, latitude, pointsOfInterest } = body as {
-      longitude: number;
-      latitude: number;
-      pointsOfInterest?: Array<{
-        name: string;
-        longitude: number;
-        latitude: number;
-        type: string;
-        value?: number;
-      }>;
-    };
-
+    const { longitude, latitude, radius = 1, categories = ['food', 'attractions', 'shopping'] } = await c.req.json();
+    
     // Create prompt for exploration recommendation
-    const systemPrompt = `你是一個智能地圖助手，專門幫助用戶找到附近有價值的探索地點。根據以下資訊：
-1. 用戶當前位置（經度: ${longitude}, 緯度: ${latitude}）
-2. 地圖上已標記的「私密地點」和「獎勵區域」的數據: ${JSON.stringify(pointsOfInterest || [])}
-3. 使用 emoji 表示地點，例如：
-   - 🌟 高價值探索點
-   - 🔥 熱門區域
-   - 🌿 隱藏秘境
+    const systemPrompt = `你是一個當地旅遊專家 AI，熟悉各地的景點、餐廳和活動。
 
-請推薦 3 個最值得探索的地點，並提供簡短的描述。`;
+請根據以下信息推薦附近的有趣地點：
+- 用戶當前位置（${longitude}, ${latitude}）
+- 搜索半徑：${radius} 公里
+- 類別：${categories.join(', ')}
 
-    const response = await fetch(
-      `${c.env.NILAI_API_URL}/v1/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${c.env.NILAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/Llama-3.1-8B-Instruct',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: '請推薦幾個值得探索的地點。' }
-          ],
-          temperature: 0.3,
-        }),
-      }
-    );
+請推薦 3-5 個地點，對每個地點提供：
+1. 名稱
+2. 類型（如餐廳、景點、博物館等）
+3. 大約距離（公里）
+4. 簡短描述
+5. 位置座標 [經度, 緯度]
 
-    const data = await response.json() as LLMResponse;
+請以 JSON 格式輸出一個 points 的數組，每個點包含 name、type、distance、description 和 coordinates 欄位。`;
+
+    // Call Nillion LLM
+    const llmResponse = await callNillionLLM(c.env.NILAI_API_URL, c.env.NILAI_API_KEY, systemPrompt, 'recommend points of interest');
     
-    // Extract recommendations from LLM response
-    const recommendationText = data.choices?.[0]?.message?.content || '';
-    
-    // Parse the recommendations
-    const recommendationLines = recommendationText.split('\n').filter(line => line.trim() !== '');
-    const recommendations: Array<{emoji: string, name: string, description: string}> = [];
-    
-    for (let i = 0; i < recommendationLines.length; i++) {
-      const line = recommendationLines[i];
-      if (line.match(/^\d+\.\s/) && line.match(/[🌟🔥🌿]/)) {
-        const emoji = line.match(/[🌟🔥🌿]/)?.[0] || '🌍';
-        const name = line.replace(/^\d+\.\s/, '').split(' - ')[0].trim();
-        const description = recommendationLines[i + 1]?.trim() || '';
-        
-        recommendations.push({ emoji, name, description });
-        // Skip the description line
-        i++;
-      }
+    if (!llmResponse || !llmResponse.choices || !llmResponse.choices[0]?.message?.content) {
+      return c.json({ error: 'Failed to generate exploration recommendations' }, 500);
     }
 
-    // If parsing failed, return a simplified response
-    if (recommendations.length === 0) {
+    try {
+      // Extract JSON from response
+      const contentText = llmResponse.choices[0].message.content;
+      const jsonMatch = contentText.match(/```json\n([\s\S]*?)\n```/) || contentText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const pointsJson = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        return c.json(pointsJson);
+      } else {
+        // Generate a simplified response if JSON parsing fails
+        return c.json({
+          points: [
+            {
+              name: 'Local Recommendation',
+              type: 'suggestion',
+              distance: 0.5,
+              description: 'Generated recommendation based on your location',
+              coordinates: [longitude + 0.01, latitude + 0.01]
+            }
+          ]
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing exploration recommendations:', error);
+      
+      // Return a fallback response
       return c.json({
-        recommendations: [
-          { 
-            emoji: '🌟', 
-            name: '推薦地點', 
-            description: recommendationText 
+        points: [
+          {
+            name: 'Local Cafe',
+            type: 'cafe',
+            distance: 0.3,
+            description: 'A cozy local cafe to relax and enjoy local cuisine',
+            coordinates: [longitude + 0.002, latitude + 0.001]
+          },
+          {
+            name: 'City Park',
+            type: 'park',
+            distance: 0.8,
+            description: 'Beautiful city park with walking paths and local flora',
+            coordinates: [longitude - 0.003, latitude + 0.004]
           }
         ]
       });
     }
-
-    return c.json({ recommendations });
   } catch (error) {
-    console.error('Exploration recommendation error:', error);
-    return c.json(
-      { error: 'Failed to generate exploration recommendations' },
-      { status: 500 }
-    );
+    console.error('Error generating exploration recommendations:', error);
+    return c.json({ error: 'Failed to generate exploration recommendations' }, 500);
   }
 });
 
-// Endpoint for interfacing with Mapbox
-map_route.post('/mapbox-interaction', async (c) => {
+// Mapbox interaction endpoint
+map_route.openapi(mapboxInteractionRoute, async (c) => {
   try {
-    const body = await c.req.json();
-    const { query, mapData, userLocation } = body as {
-      query: string;
-      mapData?: {
-        markers: Array<{
-          id: string;
-          longitude: number;
-          latitude: number;
-          type: string;
-          properties?: Record<string, any>;
-        }>;
-        layers?: Array<{
-          id: string;
-          type: string;
-          source: string;
-          properties?: Record<string, any>;
-        }>;
-      };
-      userLocation?: {
-        longitude: number;
-        latitude: number;
-      };
-    };
-
-    // Create system prompt for Mapbox interaction
-    const systemPrompt = `你是一個專業的地圖助手，能夠幫助用戶與地圖互動。你可以：
-1. 生成互動式地圖指令
-2. 解析用戶的地理位置需求
-3. 推薦附近的興趣點
-4. 幫助用戶理解地圖上的資訊
-
-用戶的位置：${JSON.stringify(userLocation || {})}
-地圖數據：${JSON.stringify(mapData || {})}
-
-請基於用戶的查詢，提供適當的地圖互動建議。回復應包含：
-- 明確的指令，例如 "移動到"、"顯示"、"隱藏" 特定圖層或標記
-- 如果需要新增標記，請提供經緯度、名稱和類型
-- 如果需要設定圖層，請提供圖層ID和顯示設定`;
-
-    const response = await fetch(
-      `${c.env.NILAI_API_URL}/v1/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${c.env.NILAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/Llama-3.1-8B-Instruct',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: query }
-          ],
-          temperature: 0.3,
-        }),
-      }
-    );
-
-    const data = await response.json() as LLMResponse;
+    const { query, userLocation, mapData } = await c.req.json();
     
-    // Extract response from LLM
-    const responseText = data.choices?.[0]?.message?.content || '';
+    // Create prompt for mapbox interaction
+    const systemPrompt = `你是一個專業的地圖助手 AI，可以理解用戶關於地圖的自然語言查詢並提供相應指令。
+
+當前狀態：
+- 用戶位置：經度 ${userLocation.longitude}，緯度 ${userLocation.latitude}
+- 地圖上已有標記：${mapData.markers ? mapData.markers.map(m => m.name || m.id).join(', ') : '無'}
+
+請根據用戶的查詢「${query}」提供下列資訊：
+1. 文字回應（應該顯示給用戶的訊息）
+2. 地圖操作指令，可包含以下任何操作：
+   - moveCamera: 是否需要移動地圖視角 (true/false)
+   - targetLocation: 新的地圖中心座標 {longitude, latitude}
+   - zoomLevel: 地圖縮放級別 (1-20，數字越大越詳細)
+   - addMarkers: 要新增的標記 [{id, longitude, latitude, type, name}]
+   - removeMarkers: 要移除的標記 ID 列表
+   - toggleLayers: 要顯示/隱藏的圖層名稱
+
+請返回正確格式的 JSON 對象，包含 response（文字回應）和 commands（地圖指令）。`;
+
+    // Call Nillion LLM
+    const llmResponse = await callNillionLLM(c.env.NILAI_API_URL, c.env.NILAI_API_KEY, systemPrompt, query);
     
-    // Parse the response for map commands
-    // This is a simplified implementation - in reality, you would need more robust parsing
-    const mapCommands: {
-      moveCamera: boolean;
-      targetLocation: { longitude: number; latitude: number } | null;
-      addMarkers: any[];
-      removeMarkers: any[];
-      toggleLayers: any[];
-      zoomLevel: number | null;
-      rawResponse: string;
-    } = {
-      moveCamera: false,
-      targetLocation: null,
-      addMarkers: [],
-      removeMarkers: [],
-      toggleLayers: [],
-      zoomLevel: null,
-      rawResponse: responseText
-    };
-    
-    // Check for camera movement commands
-    if (responseText.match(/移動到|導航到|前往|查看位置|zoom to|move to/i)) {
-      mapCommands.moveCamera = true;
+    if (!llmResponse || !llmResponse.choices || !llmResponse.choices[0]?.message?.content) {
+      return c.json({ error: 'Failed to process map interaction' }, 500);
+    }
+
+    try {
+      // Extract JSON from response
+      const contentText = llmResponse.choices[0].message.content;
+      const jsonMatch = contentText.match(/```json\n([\s\S]*?)\n```/) || contentText.match(/\{[\s\S]*\}/);
       
-      // Extract coordinates (simple regex pattern)
-      const coordMatch = responseText.match(/(\d+\.\d+),\s*(\d+\.\d+)/);
-      if (coordMatch) {
-        mapCommands.targetLocation = {
-          longitude: parseFloat(coordMatch[1]),
-          latitude: parseFloat(coordMatch[2])
-        };
+      if (jsonMatch) {
+        const interactionJson = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        
+        // Make sure the commands object exists
+        interactionJson.commands = interactionJson.commands || {};
+        
+        // Ensure the raw response is available
+        interactionJson.commands.rawResponse = interactionJson.response;
+        
+        return c.json(interactionJson);
+      } else {
+        // Fallback if JSON parsing fails
+        const textResponse = contentText.replace(/```json|```/g, '').trim();
+        
+        return c.json({
+          response: textResponse,
+          commands: {
+            moveCamera: false,
+            addMarkers: [],
+            removeMarkers: [],
+            toggleLayers: [],
+            rawResponse: textResponse
+          }
+        });
       }
+    } catch (error) {
+      console.error('Error parsing mapbox interaction:', error);
+      
+      // Return the raw text response as fallback
+      const textResponse = llmResponse.choices[0].message.content;
+      
+      return c.json({
+        response: textResponse,
+        commands: {
+          moveCamera: false,
+          addMarkers: [],
+          removeMarkers: [],
+          toggleLayers: [],
+          rawResponse: textResponse
+        }
+      });
     }
-    
-    // Check for zoom commands
-    const zoomMatch = responseText.match(/縮放級別|zoom level|設置縮放|set zoom|zoom to (\d+)/i);
-    if (zoomMatch && zoomMatch[1]) {
-      mapCommands.zoomLevel = parseInt(zoomMatch[1]);
-    }
-    
-    return c.json({
-      response: responseText,
-      commands: mapCommands
-    });
-    
   } catch (error) {
-    console.error('Mapbox interaction error:', error);
-    return c.json(
-      { error: 'Failed to process mapbox interaction' },
-      { status: 500 }
-    );
+    console.error('Error processing mapbox interaction:', error);
+    return c.json({ error: 'Failed to process map interaction' }, 500);
   }
 });
 
-export { map_route } 
+// Helper function to call Nillion LLM API
+async function callNillionLLM(apiUrl: string, apiKey: string, systemPrompt: string, userPrompt: string): Promise<LLMResponse> {
+  try {
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'nilai-chat',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      console.error('LLM API error:', response.status, await response.text());
+      throw new Error(`LLM API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error calling LLM API:', error);
+    throw error;
+  }
+} 

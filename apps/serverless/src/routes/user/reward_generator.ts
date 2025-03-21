@@ -1,290 +1,332 @@
-import { Hono } from 'hono'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import { z } from 'zod'
+import { createRoute } from '@hono/zod-openapi'
 
-// Define the environment interface
-interface Env {
-  NILAI_API_URL: string;
-  NILAI_API_KEY: string;
-  OPEN_METEO_API_URL: string;
+export type HonoContext = {
+  Bindings: {
+    OPEN_METEO_API_URL: string
+  }
 }
 
-// Reward types
-export enum RewardValue {
+enum RewardValue {
   High = 'high',
   Medium = 'medium',
-  Low = 'low'
+  Low = 'low',
 }
 
-// Define interfaces
 interface Reward {
-  id: string;
-  coordinates: [number, number];
-  value: RewardValue;
-  emoji: string;
-  linkedSpotId: string;
-  isVisible: boolean;
+  latitude: number
+  longitude: number
+  value: RewardValue
+  emoji: string
+  id: string
 }
 
 interface LandWaterCheckResponse {
-  latitude: number;
-  longitude: number;
-  generationtime_ms: number;
-  utc_offset_seconds: number;
-  timezone: string;
-  timezone_abbreviation: string;
-  current: {
-    is_day: number;
-    time: string;
-  };
+  is_land: boolean
 }
 
-// Map reward values to emoji
 const rewardValueToEmoji = {
-  [RewardValue.High]: '🔥',
-  [RewardValue.Medium]: '⭐️',
-  [RewardValue.Low]: '🍀'
-};
+  [RewardValue.High]: '🌟',
+  [RewardValue.Medium]: '⭐',
+  [RewardValue.Low]: '✨',
+}
 
-const reward_route = new Hono<{ Bindings: Env }>()
-
-// Simple hash function for deterministic value generation
+// Simple deterministic hash function
 function simpleHash(input: string): number {
-  let hash = 0;
+  let hash = 0
   for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0; // Convert to 32bit integer
+    hash = (hash * 31 + input.charCodeAt(i)) & 0xffffffff
   }
-  return Math.abs(hash) / 2147483647; // Normalize to 0-1
+  // Normalize to 0-1 range
+  return (hash & 0x7fffffff) / 0x7fffffff
 }
 
-// Convert a hash value to a reward value
-function getRewardValueFromSeed(seedStr: string): RewardValue {
-  const hashValue = simpleHash(seedStr);
-  
-  if (hashValue < 0.1) {
-    return RewardValue.High; // 10% chance of high value
-  } else if (hashValue < 0.4) {
-    return RewardValue.Medium; // 30% chance of medium value
+function getRewardValueFromSeed(seed: string, lat: number, lng: number): RewardValue {
+  const locationSeed = `${seed}-${lat.toFixed(6)}-${lng.toFixed(6)}`
+  const hashValue = simpleHash(locationSeed)
+
+  if (hashValue > 0.9) {
+    return RewardValue.High
+  } else if (hashValue > 0.7) {
+    return RewardValue.Medium
   } else {
-    return RewardValue.Low; // 60% chance of low value
+    return RewardValue.Low
   }
 }
 
-// Function to check if coordinates are on land (not sea)
-async function isLand(longitude: number, latitude: number, env: Env): Promise<boolean> {
+// Check if a point is on land using Open-Meteo API
+async function isLand(
+  c: { env: { OPEN_METEO_API_URL: string } },
+  latitude: number,
+  longitude: number
+): Promise<boolean> {
   try {
-    // First, check if coordinates are in ranges where there's mostly ocean
-    // These are very rough checks to quickly filter out obvious ocean areas
-    // Pacific Ocean large areas
-    if ((longitude < -120 && longitude > -180) && (latitude < 60 && latitude > -60)) {
-      if (
-        // Avoid most of Pacific Ocean 
-        (longitude < -130 && longitude > -170 && latitude < 30 && latitude > -30) ||
-        // Avoid Southern Pacific
-        (longitude < -100 && longitude > -160 && latitude < -30 && latitude > -60)
-      ) {
-        return false;
-      }
-    }
-    
-    // Atlantic Ocean
-    if ((longitude < -20 && longitude > -70) && (latitude < 60 && latitude > -60)) {
-      if (
-        // Mid Atlantic
-        (longitude < -40 && longitude > -65 && latitude < 40 && latitude > -10)
-      ) {
-        return false;
-      }
-    }
-    
-    // Indian Ocean
-    if ((longitude > 50 && longitude < 110) && (latitude < 20 && latitude > -50)) {
-      if (
-        // Central Indian Ocean
-        (longitude > 60 && longitude < 90 && latitude < 0 && latitude > -40)
-      ) {
-        return false;
-      }
-    }
-    
-    // For coordinates that pass the initial filter, make an API call to confirm
-    const apiUrl = `${env.OPEN_METEO_API_URL}?latitude=${latitude}&longitude=${longitude}&current=is_day&forecast_days=1`;
-    const response = await fetch(apiUrl);
-    
+    const url = `${c.env.OPEN_METEO_API_URL}/v1/land?latitude=${latitude}&longitude=${longitude}`
+    const response = await fetch(url)
+
     if (!response.ok) {
-      console.error('Failed to check land/water status');
-      return false; // If we can't verify, better to assume it's water
+      console.error(`Error checking land/water: ${response.statusText}`)
+      // Default to true to not block rewards if API fails
+      return true
     }
-    
-    const data: LandWaterCheckResponse = await response.json();
-    // Open-Meteo returns data for land points only
-    // If we get a valid response with current data, it's on land
-    return data && data.current && 'is_day' in data.current;
+
+    const data = await response.json() as LandWaterCheckResponse
+    return data.is_land
   } catch (error) {
-    console.error('Error checking land/water status:', error);
-    return false; // If there's an error, assume it's water to be safe
+    console.error('Error checking if point is on land:', error)
+    // Default to true to not block rewards if API fails
+    return true
   }
 }
 
-// Generate rewards around a specific location
-reward_route.post('/generate-rewards-around', async (c) => {
-  try {
-    const { centerCoordinates, radius, count, spotId, seed } = await c.req.json();
-    
-    if (!centerCoordinates || !Array.isArray(centerCoordinates) || centerCoordinates.length !== 2) {
-      return c.json({ error: 'Invalid coordinates format' }, 400);
-    }
-    
-    const [centerLng, centerLat] = centerCoordinates;
-    const radiusVal = radius || 0.01; // Default radius
-    const countVal = count || 10; // Default count
-    const seedVal = seed || 'default-seed';
-    const spotIdVal = spotId || 'default-spot'; // Default spot ID
-    
-    const candidateRewards: Reward[] = [];
-    const validationPromises: Promise<boolean>[] = [];
-    
-    // Generate rewards around the center point
-    for (let i = 0; i < countVal; i++) {
-      // Generate a position within the radius (random distance and angle)
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = Math.random() * radiusVal;
-      
-      // Convert polar to Cartesian coordinates (approximation for small distances)
-      const lng = centerLng + distance * Math.cos(angle);
-      const lat = centerLat + distance * Math.sin(angle);
-      
-      // Get a deterministic reward value based on coordinates and seed
-      const seedString = `${seedVal}-${lng.toFixed(6)}-${lat.toFixed(6)}-${i}`;
-      const rewardValue = getRewardValueFromSeed(seedString);
-      
-      const reward: Reward = {
-        id: `reward-${seedVal}-${i}`,
-        coordinates: [lng, lat],
-        value: rewardValue,
-        emoji: rewardValueToEmoji[rewardValue],
-        linkedSpotId: spotIdVal,
-        isVisible: true
-      };
-      
-      candidateRewards.push(reward);
-      validationPromises.push(isLand(lng, lat, c.env as Env));
-    }
-    
-    // Filter out rewards that are not on land
-    const landChecks = await Promise.all(validationPromises);
-    const landRewards = candidateRewards.filter((_, index) => landChecks[index]);
-    
-    return c.json({ rewards: landRewards });
-  } catch (error) {
-    console.error('Error generating rewards:', error);
-    return c.json({ error: 'Failed to generate rewards' }, 500);
-  }
-});
+const generateRewardsAroundLocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  radius: z.number().min(0.01).max(5),
+  count: z.number().min(1).max(100),
+  seed: z.string().min(1)
+})
 
-// Generate rewards across the map area
-reward_route.post('/generate-map-rewards', async (c) => {
-  try {
-    const { bounds, gridSize, seed, spotId } = await c.req.json();
-    
-    if (!bounds || 
-        !Array.isArray(bounds) || 
-        bounds.length !== 2 || 
-        !Array.isArray(bounds[0]) || 
-        !Array.isArray(bounds[1]) || 
-        bounds[0].length !== 2 || 
-        bounds[1].length !== 2) {
-      return c.json({ error: 'Invalid bounds format' }, 400);
-    }
-    
-    const [[swLng, swLat], [neLng, neLat]] = bounds;
-    const gridSizeVal = gridSize || 10; // Default grid size
-    const seedVal = seed || 'default-seed';
-    const spotIdVal = spotId || 'default-spot'; // Default spot ID
-    
-    const candidateRewards: Reward[] = [];
-    const validationPromises: Promise<boolean>[] = [];
-    
-    const lngDiff = neLng - swLng;
-    const latDiff = neLat - swLat;
-    
-    // Create a grid of potential rewards
-    for (let i = 0; i < gridSizeVal; i++) {
-      for (let j = 0; j < gridSizeVal; j++) {
-        // Add some jitter to make distribution less regular
-        const jitterFactor = 0.2; // 20% jitter
-        const jitterX = (Math.random() - 0.5) * jitterFactor * (lngDiff / gridSizeVal);
-        const jitterY = (Math.random() - 0.5) * jitterFactor * (latDiff / gridSizeVal);
-        
-        const jitterLng = swLng + (i * lngDiff / gridSizeVal) + jitterX;
-        const jitterLat = swLat + (j * latDiff / gridSizeVal) + jitterY;
-        
-        // Get a deterministic reward value based on coordinates and seed
-        const seedString = `${seedVal}-${jitterLng.toFixed(6)}-${jitterLat.toFixed(6)}-${i}-${j}`;
-        const rewardValue = getRewardValueFromSeed(seedString);
-        
-        const reward: Reward = {
-          id: `reward-${seedVal}-${i}-${j}`,
-          coordinates: [jitterLng, jitterLat],
-          value: rewardValue,
-          emoji: rewardValueToEmoji[rewardValue],
-          linkedSpotId: spotIdVal,
-          isVisible: true
-        };
-        
-        candidateRewards.push(reward);
-        validationPromises.push(isLand(jitterLng, jitterLat, c.env as Env));
+const generateMapRewardsSchema = z.object({
+  bounds: z.object({
+    north: z.number().min(-90).max(90),
+    south: z.number().min(-90).max(90),
+    east: z.number().min(-180).max(180),
+    west: z.number().min(-180).max(180)
+  }),
+  count: z.number().min(1).max(500),
+  seed: z.string().min(1)
+})
+
+const validateRewardSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  rewardId: z.string().min(1),
+  hotspots: z.array(z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    id: z.string().min(1)
+  }))
+})
+
+// Create the OpenAPI route
+const reward_route = new OpenAPIHono<HonoContext>()
+
+// Route to generate rewards around a location
+const generateRewardsAroundLocationRoute = createRoute({
+  method: 'post',
+  path: '/generate-rewards-around',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: generateRewardsAroundLocationSchema
+        }
       }
     }
-    
-    // Filter out rewards that are not on land
-    const landChecks = await Promise.all(validationPromises);
-    const landRewards = candidateRewards.filter((_, index) => landChecks[index]);
-    
-    return c.json({ rewards: landRewards });
-  } catch (error) {
-    console.error('Error generating map rewards:', error);
-    return c.json({ error: 'Failed to generate map rewards' }, 500);
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            rewards: z.array(z.object({
+              latitude: z.number(),
+              longitude: z.number(),
+              value: z.string(),
+              emoji: z.string(),
+              id: z.string()
+            }))
+          })
+        }
+      },
+      description: 'Successfully generated rewards around location'
+    }
   }
-});
+})
 
-// Validate reward endpoint
-reward_route.post('/validate-reward', async (c) => {
-  try {
-    const { rewardCoordinates, hotspotCoordinates, maxDistance } = await c.req.json();
+reward_route.openapi(generateRewardsAroundLocationRoute, async (c) => {
+  const { latitude, longitude, radius, count, seed } = await c.req.json()
+  const rewards: Reward[] = []
+
+  for (let i = 0; i < count; i++) {
+    // Generate a point within the radius
+    const angle = Math.random() * 2 * Math.PI
+    const distance = Math.random() * radius
     
-    if (!rewardCoordinates || !Array.isArray(rewardCoordinates) || rewardCoordinates.length !== 2 ||
-        !hotspotCoordinates || !Array.isArray(hotspotCoordinates) || hotspotCoordinates.length !== 2) {
-      return c.json({ error: 'Invalid coordinates format' }, 400);
+    // Convert to lat/lng (approximate method, works for small distances)
+    const lat = latitude + (distance * Math.cos(angle) * 0.009)
+    const lng = longitude + (distance * Math.sin(angle) * 0.009 / Math.cos(latitude * Math.PI / 180))
+    
+    // Check if point is on land
+    const onLand = await isLand(c, lat, lng)
+    if (!onLand) {
+      // Skip this point and try again
+      i--
+      continue
     }
     
-    const [rewardLng, rewardLat] = rewardCoordinates;
-    const [hotspotLng, hotspotLat] = hotspotCoordinates;
-    const maxDistVal = maxDistance || 0.01; // Default max distance (~1km)
+    const value = getRewardValueFromSeed(seed, lat, lng)
+    const id = `${seed}-${lat.toFixed(6)}-${lng.toFixed(6)}`
     
-    // Calculate distance between reward and hotspot (approximate in degrees)
-    const distanceDegrees = Math.sqrt(
-      Math.pow(rewardLng - hotspotLng, 2) + 
-      Math.pow(rewardLat - hotspotLat, 2)
-    );
-    
-    // Convert to kilometers (very rough approximation)
-    // 1 degree is approximately 111km at the equator, but varies with latitude
-    const distance = distanceDegrees * 111;
-    
-    // Validate if the reward is close enough to the hotspot
-    const isValid = distanceDegrees <= maxDistVal;
-    
-    return c.json({
-      isValid,
-      distance, // in km (approximate)
-      distanceDegrees
-    });
-  } catch (error) {
-    console.error('Error validating reward:', error);
-    return c.json({ error: 'Failed to validate reward' }, 500);
+    rewards.push({
+      latitude: lat,
+      longitude: lng,
+      value,
+      emoji: rewardValueToEmoji[value],
+      id
+    })
   }
-});
+  
+  return c.json({ rewards })
+})
+
+// Route to generate rewards across a map area
+const generateMapRewardsRoute = createRoute({
+  method: 'post',
+  path: '/generate-map-rewards',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: generateMapRewardsSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            rewards: z.array(z.object({
+              latitude: z.number(),
+              longitude: z.number(),
+              value: z.string(),
+              emoji: z.string(),
+              id: z.string()
+            }))
+          })
+        }
+      },
+      description: 'Successfully generated rewards across map area'
+    }
+  }
+})
+
+reward_route.openapi(generateMapRewardsRoute, async (c) => {
+  const { bounds, count, seed } = await c.req.json()
+  const rewards: Reward[] = []
+  
+  // Calculate the width and height of the bounding box
+  const latDiff = bounds.north - bounds.south
+  const lngDiff = bounds.east - bounds.west
+  
+  let attempts = 0
+  const maxAttempts = count * 3 // Allow for some failures
+  
+  while (rewards.length < count && attempts < maxAttempts) {
+    // Generate a random point within the bounds
+    const lat = bounds.south + Math.random() * latDiff
+    const lng = bounds.west + Math.random() * lngDiff
+    
+    // Check if point is on land
+    const onLand = await isLand(c, lat, lng)
+    if (!onLand) {
+      attempts++
+      continue
+    }
+    
+    const value = getRewardValueFromSeed(seed, lat, lng)
+    const id = `${seed}-${lat.toFixed(6)}-${lng.toFixed(6)}`
+    
+    rewards.push({
+      latitude: lat,
+      longitude: lng,
+      value,
+      emoji: rewardValueToEmoji[value],
+      id
+    })
+    
+    attempts++
+  }
+  
+  return c.json({ rewards })
+})
+
+// Route to validate if a reward can be collected
+const validateRewardRoute = createRoute({
+  method: 'post',
+  path: '/validate-reward',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: validateRewardSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            valid: z.boolean(),
+            message: z.string()
+          })
+        }
+      },
+      description: 'Validation result for reward collection'
+    }
+  }
+})
+
+reward_route.openapi(validateRewardRoute, async (c) => {
+  const { latitude, longitude, rewardId, hotspots } = await c.req.json()
+  
+  // Check if any hotspot is close enough (within 100 meters)
+  const maxDistanceKm = 0.1 // 100 meters
+  
+  for (const hotspot of hotspots) {
+    const distance = calculateDistance(
+      latitude, 
+      longitude, 
+      hotspot.latitude, 
+      hotspot.longitude
+    )
+    
+    if (distance <= maxDistanceKm) {
+      return c.json({ 
+        valid: true, 
+        message: "Reward collected successfully!" 
+      })
+    }
+  }
+  
+  return c.json({ 
+    valid: false, 
+    message: "You need to be closer to a hotspot to collect this reward." 
+  })
+})
+
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Radius of the Earth in km
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  const distance = R * c // Distance in km
+  return distance
+}
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI/180)
+}
 
 export { reward_route } 
