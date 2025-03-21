@@ -155,4 +155,43 @@ export function rewardsToHeatmapFormat(rewards: Reward[]): GeoJSON.FeatureCollec
     type: 'FeatureCollection',
     features
   };
+}
+
+/**
+ * Find rewards near a specific location
+ * @param location The location coordinates [lng, lat]
+ * @param rewards Array of all rewards
+ * @param radius The search radius in kilometers
+ * @returns Array of rewards within the radius
+ */
+export function findRewardsNearLocation(
+  location: [number, number], 
+  rewards: Reward[],
+  radius: number = 0.5
+): Reward[] {
+  // Calculate distance between two points using Haversine formula
+  const calculateDistance = (
+    point1: [number, number], 
+    point2: [number, number]
+  ): number => {
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const R = 6371; // Earth's radius in km
+    
+    const dLat = toRad(point2[1] - point1[1]);
+    const dLon = toRad(point2[0] - point1[0]);
+    
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(toRad(point1[1])) * Math.cos(toRad(point2[1])) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+  
+  // Filter rewards by distance
+  return rewards.filter(reward => {
+    const distance = calculateDistance(location, reward.coordinates);
+    return distance <= radius && reward.isVisible;
+  });
 } 

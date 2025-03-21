@@ -1,9 +1,11 @@
 {
   "navbar": {
     "title": "軌道地圖",
-    "language": "語言",
+    "language": "🌐",
     "switchToLight": "切換至亮色模式",
-    "switchToDark": "切換至暗色模式"
+    "switchToDark": "切換至暗色模式",
+    "showRewards": "顯示懸停獎勵",
+    "hideRewards": "隱藏懸停獎勵"
   },
   "locationModal": {
     "title": "位置選擇",
@@ -48,7 +50,9 @@
     "rewardDescription": "您在私人地點附近發現了一個獎勵。收集它或繼續探索尋找更多獎勵。",
     "collectReward": "收集",
     "closeReward": "關閉",
-    "selectTags": "選擇分類"
+    "selectTags": "選擇分類",
+    "nearbyRewardsFound": "附近有 {{count}} 個獎勵",
+    "checkNearbyRewards": "將滑鼠懸停在圖上查看獎勵"
   },
   "tags": {
     "food": "美食",
@@ -57,5 +61,10 @@
     "shopping": "購物",
     "culture": "文化",
     "other": "其他"
+  },
+  "app": {
+    "title": "軌道地圖 - 發現隱藏獎勵",
+    "showRewards": "顯示獎勵",
+    "hideRewards": "隱藏獎勵"
   }
 }

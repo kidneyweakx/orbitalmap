@@ -6,9 +6,11 @@ import '../App.css';
 interface NavbarProps {
   toggleTheme: () => void;
   currentTheme: ThemeMode;
+  showHoverEffects?: boolean;
+  setShowHoverEffects?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function Navbar({ toggleTheme, currentTheme }: NavbarProps) {
+export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects }: NavbarProps) {
   const { t, i18n } = useTranslation();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
@@ -17,10 +19,25 @@ export function Navbar({ toggleTheme, currentTheme }: NavbarProps) {
     setShowLanguageMenu(false);
   };
 
+  const toggleHoverEffects = () => {
+    if (setShowHoverEffects) {
+      setShowHoverEffects(prev => !prev);
+    }
+  };
+
   return (
     <div className="navbar">
       <div className="navbar-title">{t('navbar.title')}</div>
       <div className="navbar-controls">
+        {setShowHoverEffects && (
+          <button
+            className={`hover-toggle-btn ${showHoverEffects ? 'active' : ''}`}
+            onClick={toggleHoverEffects}
+            aria-label={showHoverEffects ? t('navbar.hideRewards') : t('navbar.showRewards')}
+          >
+            {showHoverEffects ? '👁️' : '👁️‍🗨️'}
+          </button>
+        )}
         <button 
           className="theme-toggle-button" 
           onClick={toggleTheme}

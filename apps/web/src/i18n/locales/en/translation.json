@@ -1,9 +1,11 @@
 {
   "navbar": {
-    "title": "Orbital Map",
-    "language": "Language",
-    "switchToLight": "Switch to light mode",
-    "switchToDark": "Switch to dark mode"
+    "title": "OrbitalMap",
+    "language": "🌐",
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode",
+    "showRewards": "Show rewards on hover",
+    "hideRewards": "Hide rewards on hover"
   },
   "locationModal": {
     "title": "Location Selection",
@@ -48,7 +50,9 @@
     "rewardDescription": "You've discovered a reward near one of your private spots. Collect it or explore more to find others.",
     "collectReward": "Collect",
     "closeReward": "Close",
-    "selectTags": "Select categories"
+    "selectTags": "Select categories",
+    "nearbyRewardsFound": "{{count}} rewards nearby",
+    "checkNearbyRewards": "Hover over the map to see rewards"
   },
   "tags": {
     "food": "Food",
@@ -57,5 +61,10 @@
     "shopping": "Shopping",
     "culture": "Culture",
     "other": "Other"
+  },
+  "app": {
+    "title": "OrbitalMap - Discover Hidden Rewards",
+    "showRewards": "Show Rewards",
+    "hideRewards": "Hide Rewards"
   }
 }

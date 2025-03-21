@@ -1,9 +1,11 @@
 {
   "navbar": {
     "title": "オービタルマップ",
-    "language": "言語",
+    "language": "🌐",
     "switchToLight": "ライトモードに切り替え",
-    "switchToDark": "ダークモードに切り替え"
+    "switchToDark": "ダークモードに切り替え",
+    "showRewards": "報酬をホバー表示",
+    "hideRewards": "報酬のホバー表示を非表示"
   },
   "locationModal": {
     "title": "位置選択",
@@ -48,7 +50,9 @@
     "rewardDescription": "プライベートスポットの近くで報酬を見つけました。収集するか、探索を続けてさらに報酬を見つけましょう。",
     "collectReward": "収集",
     "closeReward": "閉じる",
-    "selectTags": "カテゴリーを選択"
+    "selectTags": "カテゴリーを選択",
+    "nearbyRewardsFound": "近くに {{count}} 件の報酬があります",
+    "checkNearbyRewards": "マップ上でホバーして報酬を確認"
   },
   "tags": {
     "food": "食事",
@@ -57,5 +61,10 @@
     "shopping": "ショッピング",
     "culture": "文化",
     "other": "その他"
+  },
+  "app": {
+    "title": "オービタルマップ - 隠された報酬を発見",
+    "showRewards": "報酬を表示",
+    "hideRewards": "報酬を非表示"
   }
 }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './App.css'
-import { Reward, generateMapRewards, rewardsToHeatmapFormat } from './utils/rewardGenerator'
+import { Reward, RewardValue, generateMapRewards, rewardsToHeatmapFormat, findRewardsNearLocation } from './utils/rewardGenerator'
 import { MapMenu } from './components/MapMenu'
 import { Navbar } from './components/Navbar'
 
@@ -21,6 +21,13 @@ function App() {
   
   // Theme state, default to dark
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark')
+  
+  // New state for nearby rewards and hover effects
+  const hoverMarkerRef = useRef<HTMLDivElement | null>(null)
+  const tooltipRef = useRef<HTMLDivElement | null>(null)
+  const indicatorsRef = useRef<HTMLDivElement[]>([])
+  const hoveredPositionRef = useRef<[number, number] | null>(null)
+  const [showHoverEffects, setShowHoverEffects] = useState(false)
   
   // When theme changes, set body class name
   useEffect(() => {
@@ -78,6 +85,12 @@ function App() {
     map.current.on('click', (e) => {
       const { lng, lat } = e.lngLat;
       setClickedPosition([lng, lat]);
+      
+      // Check for nearby rewards at the clicked position
+      if (rewards.length > 0) {
+        const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
+        showNearbyRewardIndicators([lng, lat], nearby);
+      }
     });
 
     // Add heatmap layer when map loads
@@ -194,7 +207,7 @@ function App() {
     // Add reward markers (emoji)
     rewards.forEach(reward => {
       // Only show high and medium value rewards as markers to avoid cluttering
-      if (reward.isVisible && (reward.value === 'high' || reward.value === 'medium')) {
+      if (reward.isVisible && (reward.value === RewardValue.High || reward.value === RewardValue.Medium)) {
         const marker = new mapboxgl.Marker({
           element: createRewardMarkerElement(reward.emoji)
         })
@@ -259,11 +272,152 @@ function App() {
     }
   }, [])
 
+  // Show indicators for nearby rewards
+  const showNearbyRewardIndicators = (clickPosition: [number, number], nearby: Reward[]) => {
+    // Clean up previous indicators
+    cleanupIndicators();
+    
+    if (!map.current) return;
+    
+    // Create indicators for each nearby reward
+    nearby.forEach(reward => {
+      // Create indicator element
+      const indicator = document.createElement('div');
+      
+      // Set class based on reward value
+      let valueClass = 'medium';
+      if (reward.value === RewardValue.High) valueClass = 'high';
+      if (reward.value === RewardValue.Low) valueClass = 'low';
+      
+      indicator.className = `reward-indicator ${valueClass}`;
+      document.body.appendChild(indicator);
+      
+      // Convert reward coordinates to pixel position
+      const point = map.current!.project(reward.coordinates);
+      
+      // Position the indicator
+      indicator.style.left = `${point.x}px`;
+      indicator.style.top = `${point.y}px`;
+      
+      // Store reference to the element
+      indicatorsRef.current.push(indicator);
+    });
+  };
+  
+  // Clean up reward indicators
+  const cleanupIndicators = () => {
+    // Remove all indicator elements
+    indicatorsRef.current.forEach(indicator => {
+      if (indicator.parentNode) {
+        document.body.removeChild(indicator);
+      }
+    });
+    
+    // Clear the array
+    indicatorsRef.current = [];
+  };
+
+  // Add hover effect detection
+  useEffect(() => {
+    if (map.current) {
+      map.current.on('mousemove', (e) => {
+        if (!showHoverEffects) return;
+        
+        const { lng, lat } = e.lngLat;
+        hoveredPositionRef.current = [lng, lat];
+        
+        // Show the hover marker at the mouse position
+        updateHoverMarker([lng, lat]);
+        
+        // Check for rewards around the hovered position
+        if (rewards.length > 0) {
+          const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
+          updateRewardsTooltip([lng, lat], nearby);
+        }
+      });
+    }
+  }, [showHoverEffects, rewards]);
+  
+  // Create and initialize hover UI elements
+  useEffect(() => {
+    // Create the hover marker element if it doesn't exist
+    if (!hoverMarkerRef.current) {
+      const hoverMarker = document.createElement('div');
+      hoverMarker.className = 'hover-marker';
+      hoverMarker.style.opacity = '0';
+      document.body.appendChild(hoverMarker);
+      hoverMarkerRef.current = hoverMarker;
+    }
+    
+    // Create the tooltip element if it doesn't exist
+    if (!tooltipRef.current) {
+      const tooltip = document.createElement('div');
+      tooltip.className = 'nearby-rewards-tooltip';
+      tooltip.style.opacity = '0';
+      document.body.appendChild(tooltip);
+      tooltipRef.current = tooltip;
+    }
+    
+    // Update visibility based on showHoverEffects
+    if (hoverMarkerRef.current) {
+      hoverMarkerRef.current.style.opacity = showHoverEffects ? '1' : '0';
+    }
+    
+    // Clean up on unmount
+    return () => {
+      if (hoverMarkerRef.current) {
+        document.body.removeChild(hoverMarkerRef.current);
+        hoverMarkerRef.current = null;
+      }
+      
+      if (tooltipRef.current) {
+        document.body.removeChild(tooltipRef.current);
+        tooltipRef.current = null;
+      }
+      
+      cleanupIndicators();
+    };
+  }, [showHoverEffects]);
+  
+  // Update hover marker position
+  const updateHoverMarker = (position: [number, number]) => {
+    if (!map.current || !hoverMarkerRef.current) return;
+    
+    // Convert the geographical position to pixel coordinates
+    const point = map.current.project(position);
+    
+    // Update the hover marker position
+    hoverMarkerRef.current.style.left = `${point.x}px`;
+    hoverMarkerRef.current.style.top = `${point.y}px`;
+  };
+  
+  // Update tooltip with nearby rewards count
+  const updateRewardsTooltip = (position: [number, number], nearby: Reward[]) => {
+    if (!map.current || !tooltipRef.current) return;
+    
+    // Convert the geographical position to pixel coordinates
+    const point = map.current.project(position);
+    
+    // Position the tooltip above the hover point
+    tooltipRef.current.style.left = `${point.x}px`;
+    tooltipRef.current.style.top = `${point.y - 40}px`;
+    
+    // Update the tooltip content
+    if (nearby.length > 0) {
+      tooltipRef.current.textContent = t('mapMenu.nearbyRewardsFound', { count: nearby.length });
+      tooltipRef.current.style.opacity = '1';
+    } else {
+      tooltipRef.current.style.opacity = '0';
+    }
+  };
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${themeMode === 'dark' ? 'dark-theme' : ''}`}>
       <Navbar 
         toggleTheme={toggleTheme}
         currentTheme={themeMode}
+        showHoverEffects={showHoverEffects}
+        setShowHoverEffects={setShowHoverEffects}
       />
       <div ref={mapContainer} className="map-container" />
       {!showLocationModal && (
@@ -273,7 +427,7 @@ function App() {
           onClearClickedPosition={handleClearClickedPosition}
           rewards={rewards}
           setRewards={setRewards}
-          theme={themeMode}
+          theme={themeMode as ThemeMode}
         />
       )}
       
