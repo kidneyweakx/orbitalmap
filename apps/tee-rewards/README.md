@@ -1,6 +1,6 @@
-# TEE Rewards with Enarx in Docker
+# TEE Location Services with Enarx in Docker
 
-This project demonstrates how to run a Rust application in a Trusted Execution Environment (TEE) using Enarx, containerized with Docker, and exposed via an Actix-web API.
+This project demonstrates how to run secure location services in a Trusted Execution Environment (TEE) using Enarx, containerized with Docker, and exposed via an Actix-web API.
 
 ## Project Structure
 
@@ -34,58 +34,95 @@ This will:
 - Set up the Actix-web API to interact with it
 - Expose the API on port 8080
 
-## Interactive WASM Application
+## Secure Location Services Features
 
-The WASM application supports the following modes:
+### 1. Private Location Encryption & Decryption
 
-- **Direct usage**: `enarx run tee-rewards.wasm 10` calculates the 10th Fibonacci number
-- **Interactive mode**: `enarx run tee-rewards.wasm` enters an interactive prompt where you can:
-  - Enter a number to calculate its Fibonacci value
-  - Type `help` to see available commands
-  - Type `exit` or `quit` to exit the program
-- **Commands**:
-  - `help`: Display usage information
-  - `interactive`: Enter interactive mode
-  - Any number: Calculate the Fibonacci number at that index
+User location data is securely processed within the TEE:
+- Locations are encrypted using asymmetric cryptography (X25519 + ChaCha20-Poly1305)
+- Frontend receives only encrypted location IDs
+- Only authorized processes can decrypt locations within the TEE
+
+### 2. Anti-Spoofing Protection (Proof of Location)
+
+TEE validates location authenticity:
+- Verifies that GPS data comes from real hardware sensors
+- Compares with known WiFi networks and cell towers in the area
+- Prevents users from spoofing locations to claim rewards
+
+### 3. Secure Privacy-Preserving Heatmaps
+
+Anonymized location analytics:
+- Aggregates user locations into grid cells
+- Processes data inside TEE to prevent individual user tracking
+- Outputs only aggregated results
+
+### 4. Anonymous Location Analytics
+
+Privacy-preserving visit metrics:
+- Provides 24-hour visit counts for locations
+- Shows unique visitor estimates
+- Identifies peak hour information
+- All while protecting individual user privacy
 
 ## API Endpoints
 
-- `GET /health` - Health check endpoint
-- `POST /fibonacci` - Calculate Fibonacci number using the TEE
+The web interface provides REST API endpoints to interact with the TEE:
 
-### Example Usage
-
-```bash
-# Health check
-curl http://localhost:8080/health
-
-# Calculate Fibonacci number
-curl -X POST -H "Content-Type: application/json" -d '{"n": 10}' http://localhost:8080/fibonacci
+### Location Registration
+```
+POST /api/location/register
+{
+  "lat": 37.7749,
+  "lon": -122.4194,
+  "user_id": "user123",
+  "device_id": "device456",
+  "wifi_networks": [...],
+  "cell_towers": [...],
+  "accelerometer": [0.1, 0.2, 0.3],
+  "gyroscope": [0.1, 0.2, 0.3],
+  "is_mock_location": false
+}
 ```
 
-## Building Manually
+### Location Lookup
+```
+POST /api/location/get
+{
+  "encrypted_location_id": "ENCRYPTED_ID_FROM_REGISTRATION"
+}
+```
 
-If you want to build and run the components manually:
+### Heatmap Generation
+```
+POST /api/heatmap
+{
+  "min_lat": 37.7,
+  "min_lon": -122.5,
+  "max_lat": 37.8,
+  "max_lon": -122.3
+}
+```
 
-```bash
-# Build the WASM application
-cargo build --release --target=wasm32-wasi
+### Visit Analytics
+```
+POST /api/analytics/visits
+{
+  "lat": 37.7749,
+  "lon": -122.4194
+}
+```
 
-# Run with Enarx (interactive mode)
-enarx run target/wasm32-wasi/release/tee-rewards.wasm
-
-# Run with Enarx (calculate 10th Fibonacci)
-enarx run target/wasm32-wasi/release/tee-rewards.wasm 10
-
-# Build and run the web interface
-cd web-interface
-cargo run --release
+### Health Check
+```
+GET /health
 ```
 
 ## Security Considerations
 
 - The Enarx runtime provides TEE capabilities, ensuring that the code runs in a secure enclave
-- The web interface serves as a proxy to interact with the secure application
+- All sensitive operations (encryption, decryption, verification) happen only within the TEE
+- Communication between the web interface and TEE is securely managed
 - CORS is configured to allow any origin in this demo - modify for production use
 
 ## License
