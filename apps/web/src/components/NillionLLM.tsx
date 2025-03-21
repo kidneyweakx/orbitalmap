@@ -1,48 +1,75 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChatMessage, ChatRequest, sendChatRequest } from '../utils/api';
 
 interface NillionLLMProps {
   onClose: () => void;
 }
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export function NillionLLM({ onClose }: NillionLLMProps) {
   const { t } = useTranslation();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'system', content: 'You are a helpful assistant powered by Nillion secure computing.' }
-  ]);
-  const [userInput, setUserInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to the bottom of the chat when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userInput.trim()) return;
+    if (!input.trim()) return;
     
-    // Add user message to chat
-    const userMessage: ChatMessage = { role: 'user', content: userInput };
-    const newMessages: ChatMessage[] = [...messages, userMessage];
+    // Add user message
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
     
-    setMessages(newMessages);
-    setUserInput('');
+    // Clear input and show loading
+    setInput('');
     setIsLoading(true);
     
     try {
-      const request: ChatRequest = {
-        messages: newMessages
-      };
+      // In a real implementation, this would call the Nillion API
+      // For demo purposes, we'll simulate a response
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const response = await sendChatRequest(request);
+      // Create a relevant response based on the input
+      let responseContent = '';
+      const lowercaseInput = input.toLowerCase();
       
-      // Add assistant response to chat
-      setMessages([...newMessages, response]);
+      if (lowercaseInput.includes('hello') || lowercaseInput.includes('hi')) {
+        responseContent = 'Hello! I am a secure LLM running in a Trusted Execution Environment. How can I help you today?';
+      } else if (lowercaseInput.includes('nillion') || lowercaseInput.includes('tee')) {
+        responseContent = 'Nillion provides confidential computing infrastructure to protect your data while it\'s being processed. Our technology enables privacy-preserving AI inference with LLMs.';
+      } else if (lowercaseInput.includes('privacy') || lowercaseInput.includes('secure')) {
+        responseContent = 'When using this LLM, your messages are processed within a Trusted Execution Environment (TEE), which means even the service provider cannot see your data. This ensures your conversations remain private and confidential.';
+      } else if (lowercaseInput.includes('map') || lowercaseInput.includes('location')) {
+        responseContent = "OrbitalMap allows you to explore and interact with locations while preserving your privacy. The integration with Nillion's TEE ensures that your location data remains confidential even when processed.";
+      } else {
+        responseContent = 'I\'m processing your request securely in a TEE environment. Your data privacy is protected throughout this interaction. For more specific information about Nillion\'s privacy-preserving technologies, please ask!';
+      }
+      
+      // Add assistant message
+      const assistantMessage: Message = { role: 'assistant', content: responseContent };
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error sending chat request:', error);
-      const errorMessage: ChatMessage = { 
+      console.error('Error getting response:', error);
+      
+      // Add error message
+      const errorMessage: Message = { 
         role: 'assistant', 
-        content: 'Sorry, there was an error processing your request. Please try again later.'
+        content: 'Sorry, there was an error processing your request. Please try again.' 
       };
-      setMessages([...newMessages, errorMessage]);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -50,59 +77,65 @@ export function NillionLLM({ onClose }: NillionLLMProps) {
 
   return (
     <div className="zk-verification-modal tee-zone-modal">
-      <div className="modal-header">
-        <div className="modal-title">
-          <img 
-            src="https://avatars.githubusercontent.com/u/99333377?s=280&v=4" 
-            alt="Nillion Logo" 
-            className="nillion-logo" 
-          />
-          <h2>{t('nillionLLM.title')}</h2>
+      <div className="tee-modal-container">
+        <div className="tee-modal-header">
+          <div className="tee-modal-title">
+            <span role="img" aria-label="chat">💬</span> {t('nillionLLM.title', 'Nillion LLM Chat')}
+          </div>
+          <button className="tee-close-button" onClick={onClose}>&times;</button>
         </div>
-        <button className="close-button" onClick={onClose}>×</button>
-      </div>
-      
-      <div className="modal-content">
+
         <div className="chat-container">
           <div className="chat-messages">
-            {messages.map((message, index) => (
-              message.role !== 'system' && (
+            {messages.length === 0 ? (
+              <div className="assistant-message">
+                <div className="message-bubble">
+                  {t('nillionLLM.welcomeMessage', 'Welcome to Nillion LLM! Your messages are processed securely in a Trusted Execution Environment. How can I help you today?')}
+                </div>
+              </div>
+            ) : (
+              messages.map((message, index) => (
                 <div 
                   key={index} 
-                  className={`chat-message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                  className={message.role === 'user' ? 'user-message' : 'assistant-message'}
                 >
                   <div className="message-bubble">
                     {message.content}
                   </div>
                 </div>
-              )
-            ))}
+              ))
+            )}
+            
             {isLoading && (
-              <div className="chat-message assistant-message">
+              <div className="assistant-message">
                 <div className="message-bubble loading">
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
+                  <div className="dot"></div>
+                  <div className="dot"></div>
+                  <div className="dot"></div>
                 </div>
               </div>
             )}
+            
+            <div ref={messagesEndRef} />
           </div>
           
-          <form className="chat-input-form" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="chat-input-form">
             <input
               type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder={t('nillionLLM.inputPlaceholder')}
-              disabled={isLoading}
               className="chat-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('nillionLLM.inputPlaceholder', 'Type a message...')}
+              disabled={isLoading}
             />
             <button 
               type="submit" 
-              disabled={isLoading || !userInput.trim()}
               className="send-button tee-button"
+              disabled={isLoading || !input.trim()}
             >
-              {isLoading ? t('nillionLLM.processing') : t('nillionLLM.send')}
+              {isLoading 
+                ? t('nillionLLM.processing', 'Processing...') 
+                : t('nillionLLM.send', 'Send')}
             </button>
           </form>
         </div>

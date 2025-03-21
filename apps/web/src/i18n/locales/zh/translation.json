@@ -2,6 +2,7 @@
   "navbar": {
     "title": "軌道地圖",
     "language": "🌐",
+    "login": "登錄",
     "switchToLight": "切換至亮色模式",
     "switchToDark": "切換至暗色模式",
     "showRewards": "顯示懸停獎勵",
@@ -13,7 +14,6 @@
     "testAPI": "API 測試",
     "mapMenu": "地图菜单",
     "search": "搜索",
-    "login": "登录",
     "logout": "退出"
   },
   "locationModal": {

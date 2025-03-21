@@ -2,6 +2,7 @@
   "navbar": {
     "title": "オービタルマップ",
     "language": "🌐",
+    "login": "ログイン",
     "switchToLight": "ライトモードに切り替え",
     "switchToDark": "ダークモードに切り替え",
     "showRewards": "報酬をホバー表示",

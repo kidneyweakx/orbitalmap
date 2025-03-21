@@ -2,6 +2,7 @@
   "navbar": {
     "title": "OrbitalMap",
     "language": "🌐",
+    "login": "Login",
     "switchToLight": "Switch to Light Mode",
     "switchToDark": "Switch to Dark Mode",
     "showRewards": "Show rewards on hover",
