@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import mapboxgl from 'mapbox-gl';
 import { generatePrivacyHeatmap } from '../utils/privacyUtils';
 
 interface PrivacyHeatmapLayerProps {
