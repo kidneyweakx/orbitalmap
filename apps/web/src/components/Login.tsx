@@ -31,7 +31,10 @@ export function Login({ onLoginSuccess }: LoginProps) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>{t('login.title', 'Welcome to OrbitalMap')}</h1>
+        <div className="login-header">
+          <img src="/logo.png" alt="Privy" className="privy-logo" />
+          <h1>{t('login.title', 'Welcome to OrbitalMap')}</h1>
+        </div>
         <p>{t('login.description', 'Explore and interact with locations around the world.')}</p>
         
         <div className="login-methods">

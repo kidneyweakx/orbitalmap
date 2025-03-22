@@ -3106,3 +3106,9 @@ button:disabled {
     transform: translateX(100%);
   }
 }
+
+.privy-logo {
+  width: 60px;
+  height: auto;
+  margin-bottom: 16px;
+}

@@ -24,7 +24,7 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
         appearance: {
           theme: 'light',
           accentColor: '#676FFF',
-          logo: 'https://your-logo-url.com/logo.png',
+          logo: '/logo.png',
         },
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',

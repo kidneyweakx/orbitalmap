@@ -1,84 +1,124 @@
-# Turborepo starter
+# OrbitalMap
 
-This Turborepo starter is maintained by the Turborepo core team.
+OrbitalMap is a privacy-focused, web3 mapping platform that combines Zero-Knowledge proofs, Trusted Execution Environments (TEE), and interactive mapping to create a secure and private geospatial experience.
 
-## Using this example
+## Project Structure
 
-Run the following command:
+The project is organized as a Turborepo monorepo with the following components:
 
-```sh
-npx create-turbo@latest
+### Apps
+
+- **web**: The main frontend application built with React, Vite, and MapBox
+- **serverless**: Cloudflare Workers-based API backend
+- **zk_noir**: Zero-Knowledge proof circuits using Noir language
+- **tee-rewards**: Trusted Execution Environment for secure reward generation
+
+### Key Technologies
+
+- **Frontend**: React 19, TypeScript, Vite, MapBox GL
+- **Backend**: Cloudflare Workers, Hono, OpenAPI
+- **Privacy Tech**: Noir ZK proofs, Nillion for secure computations
+- **Authentication**: Privy for web3 authentication
+- **Internationalization**: i18next for multi-language support
+
+## Features
+
+OrbitalMap offers the following key features:
+
+- **Interactive Map Interface**: Explore and interact with a privacy-preserving map.
+- **Privacy-Preserving Location Sharing**: Share location data with Zero-Knowledge proofs.
+- **Web3 Authentication**: Secure login with blockchain-based identity.
+- **Reward System**: Earn rewards through secure TEE-validated interactions.
+- **Multi-language Support**: Internationalized interface.
+
+## API Endpoints
+
+The API is documented with OpenAPI and accessible via Swagger UI:
+
+- **Documentation**: `/docs` endpoint
+- **User Routes**:
+  - `/user/chat`: Secure LLM interactions via Nillion
+  - `/user/map`: Map interaction endpoints
+  - `/user/reward`: Reward generation endpoints
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Bun 1.2.5+ (package manager)
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/25trifecta/orbitalmap.git
+   cd orbitalmap
+   ```
+
+2. Install dependencies:
+   ```
+   bun install
+   ```
+
+3. Set up environment variables:
+   - Copy `.env.example` to `.env` in the `apps/web` directory
+   - Copy `.dev.vars.example` to `.dev.vars` in the `apps/serverless` directory (if available)
+
+### Running the Development Environment
+
+To start all services in development mode:
+
+```
+bun dev
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+To run specific applications:
 
 ```
-cd my-turborepo
-pnpm build
+# Frontend
+cd apps/web
+bun dev
+
+# Serverless backend
+cd apps/serverless
+bun dev
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
+### Building for Production
 
 ```
-cd my-turborepo
-pnpm dev
+bun build
 ```
 
-### Remote Caching
+## Project-Specific Information
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+### ZK Noir
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+The Zero-Knowledge proofs are implemented in Noir. To build the ZK circuits:
 
 ```
-cd my-turborepo
-npx turbo login
+cd apps/zk_noir
+nargo build
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### TEE Rewards
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+The TEE-based reward system requires Docker:
 
 ```
-npx turbo link
+cd apps/tee-rewards
+./build-and-run.sh
 ```
 
-## Useful Links
+## Contributing
 
-Learn more about the power of Turborepo:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+## License
+
+This project is licensed under the LGPL LICENSE
