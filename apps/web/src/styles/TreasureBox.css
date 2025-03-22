@@ -47,6 +47,175 @@
   flex: 1;
 }
 
+/* Card selector for toolbox mode */
+.treasure-box-card-selector h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.treasure-box-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.treasure-box-card {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.treasure-box-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.treasure-box-card.l1-card:hover {
+  border-color: #5a67d8;
+}
+
+.treasure-box-card.l2-card:hover {
+  border-color: #38a169;
+}
+
+.treasure-box-card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.treasure-box-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+
+.treasure-box-card p {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary-color);
+}
+
+.treasure-box-card-network {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.network-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.network-dot.sepolia {
+  background-color: #5a67d8;
+}
+
+.network-dot.t1 {
+  background-color: #38a169;
+}
+
+.treasure-box-card-address {
+  font-size: 0.8rem;
+  color: var(--text-secondary-color);
+  font-family: monospace;
+}
+
+/* Card content for L1 and L2 cards */
+.treasure-box-card-content {
+  position: relative;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-button:hover {
+  color: var(--primary-color);
+}
+
+.card-description {
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.function-list {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.function-list h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.function-list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.function-list li {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.network-info {
+  background-color: var(--card-background);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.network-info h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.network-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.network-info a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.network-info a:hover {
+  text-decoration: underline;
+}
+
+/* Original styles for area mode */
 .selected-area {
   margin-bottom: 20px;
   padding: 12px;
@@ -156,26 +325,91 @@
   margin-bottom: 20px;
 }
 
-.subscribe-button {
-  background-color: var(--primary-color);
-  color: white;
+/* Updated button styles */
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.subscribe-button, .view-auction-button {
+  flex: 1;
   border: none;
   border-radius: 4px;
-  padding: 10px 20px;
-  font-size: 1rem;
+  padding: 10px;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  width: 100%;
+}
+
+.subscribe-button {
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .subscribe-button:hover:not(:disabled) {
   background-color: var(--primary-color-dark);
 }
 
-.subscribe-button:disabled {
+.view-auction-button {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.view-auction-button:hover:not(:disabled) {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.subscribe-button:disabled, .view-auction-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Auction status display */
+.auction-status {
+  padding: 16px;
+  background-color: var(--card-background);
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.auction-status h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+.auction-details {
+  background-color: rgba(var(--info-color-rgb), 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.auction-details p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+}
+
+.auction-details p:last-child {
+  margin-bottom: 0;
+}
+
+.close-auction-button {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.close-auction-button:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
 }
 
 .error-message {
@@ -211,6 +445,10 @@
   margin: 0 0 8px 0;
   font-size: 0.9rem;
   color: var(--text-secondary-color);
+}
+
+.treasure-box-info p:last-child {
+  margin-bottom: 0;
 }
 
 .no-pois {
