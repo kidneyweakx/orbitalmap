@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface TEEZoneProps {
   onClose: () => void;
+}
+
+// TEE供應商類型
+enum TEEProvider {
+  MARLIN = 'marlin',
+  ENARX = 'enarx'
 }
 
 enum TEEFeature {
@@ -73,10 +79,12 @@ interface Result {
 
 export function TEEZone({ onClose }: TEEZoneProps) {
   const { t } = useTranslation();
+  const [selectedProvider, setSelectedProvider] = useState<TEEProvider | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<TEEFeature | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [enarxAvailable, setEnarxAvailable] = useState(false);
   
   // Location Registration form
   const [registrationForm, setRegistrationForm] = useState<LocationRegistrationForm>({
@@ -114,8 +122,39 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     lon: '-122.4194'
   });
 
+  // 檢查Enarx健康狀態
+  useEffect(() => {
+    const checkEnarxHealth = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/health', { 
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          // 設定較短的超時時間，以便快速失敗
+          signal: AbortSignal.timeout(2000)
+        });
+        
+        if (response.ok) {
+          setEnarxAvailable(true);
+        } else {
+          setEnarxAvailable(false);
+        }
+      } catch (err) {
+        console.log('Enarx not available:', err);
+        setEnarxAvailable(false);
+      }
+    };
+
+    checkEnarxHealth();
+  }, []);
+
   const resetState = () => {
-    setSelectedFeature(null);
+    if (selectedFeature) {
+      setSelectedFeature(null);
+    } else if (selectedProvider) {
+      setSelectedProvider(null);
+    }
     setIsLoading(false);
     setError(null);
     setResult(null);
@@ -159,8 +198,13 @@ export function TEEZone({ onClose }: TEEZoneProps) {
   };
 
   const getApiEndpoint = () => {
-    const endpoint = import.meta.env.VITE_TEE_API_ENDPOINT || 'http://localhost:8080';
-    return endpoint;
+    // 根據所選供應商返回相應的API端點
+    if (selectedProvider === TEEProvider.ENARX) {
+      return 'http://localhost:8080';
+    } else {
+      // Marlin Oyster端點
+      return import.meta.env.VITE_TEE_API_ENDPOINT || 'https://api.oyster.marlin.org';
+    }
   };
 
   const handleRegisterLocation = async () => {
@@ -169,7 +213,12 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     setResult(null);
 
     try {
-      const response = await fetch(`${getApiEndpoint()}/api/location/register`, {
+      // 根據所選供應商調整API路徑
+      const endpoint = selectedProvider === TEEProvider.ENARX
+        ? `${getApiEndpoint()}/api/v1/locations` 
+        : `${getApiEndpoint()}/api/location/register`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +232,8 @@ export function TEEZone({ onClose }: TEEZoneProps) {
           cell_towers: registrationForm.cell_towers,
           accelerometer: registrationForm.accelerometer,
           gyroscope: registrationForm.gyroscope,
-          is_mock_location: registrationForm.is_mock_location
+          is_mock_location: registrationForm.is_mock_location,
+          timestamp: new Date().toISOString()
         }),
       });
 
@@ -209,14 +259,22 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     setResult(null);
 
     try {
-      const response = await fetch(`${getApiEndpoint()}/api/location/get`, {
-        method: 'POST',
+      // 根據所選供應商調整API路徑
+      const endpoint = selectedProvider === TEEProvider.ENARX
+        ? `${getApiEndpoint()}/api/v1/locations/${encodeURIComponent(lookupForm.encrypted_location_id)}`
+        : `${getApiEndpoint()}/api/location/get`;
+      
+      const method = selectedProvider === TEEProvider.ENARX ? 'GET' : 'POST';
+      const body = selectedProvider === TEEProvider.ENARX ? undefined : JSON.stringify({
+        encrypted_location_id: lookupForm.encrypted_location_id
+      });
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          encrypted_location_id: lookupForm.encrypted_location_id
-        }),
+        body
       });
 
       const data = await response.json();
@@ -234,17 +292,25 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     setResult(null);
 
     try {
-      const response = await fetch(`${getApiEndpoint()}/api/heatmap`, {
+      // 根據所選供應商調整API路徑
+      const endpoint = selectedProvider === TEEProvider.ENARX
+        ? `${getApiEndpoint()}/api/v1/heatmap`
+        : `${getApiEndpoint()}/api/heatmap`;
+
+      const requestBody = {
+        min_lat: parseFloat(heatmapForm.min_lat),
+        min_lon: parseFloat(heatmapForm.min_lon),
+        max_lat: parseFloat(heatmapForm.max_lat),
+        max_lon: parseFloat(heatmapForm.max_lon),
+        privacy_level: 1.5 // 默認隱私級別
+      };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          min_lat: parseFloat(heatmapForm.min_lat),
-          min_lon: parseFloat(heatmapForm.min_lon),
-          max_lat: parseFloat(heatmapForm.max_lat),
-          max_lon: parseFloat(heatmapForm.max_lon)
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -262,15 +328,28 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     setResult(null);
 
     try {
-      const response = await fetch(`${getApiEndpoint()}/api/analytics/visits`, {
+      // 根據所選供應商調整API路徑
+      const endpoint = selectedProvider === TEEProvider.ENARX
+        ? `${getApiEndpoint()}/api/v1/analytics`
+        : `${getApiEndpoint()}/api/analytics/visits`;
+
+      const requestBody = selectedProvider === TEEProvider.ENARX
+        ? {
+            user_id: "user123", // 使用默認用戶ID
+            start_time: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30天前
+            end_time: new Date().toISOString() // 現在
+          }
+        : {
+            lat: parseFloat(analyticsForm.lat),
+            lon: parseFloat(analyticsForm.lon)
+          };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          lat: parseFloat(analyticsForm.lat),
-          lon: parseFloat(analyticsForm.lon)
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -578,6 +657,56 @@ export function TEEZone({ onClose }: TEEZoneProps) {
     );
   };
 
+  // 渲染TEE供應商選擇介面
+  const renderProviderSelection = () => (
+    <div className="tee-provider-selection">
+      <h3>{t('teeZone.selectProvider')}</h3>
+      <div className="provider-options">
+        <div 
+          className={`provider-option ${selectedProvider === TEEProvider.MARLIN ? 'selected' : ''}`}
+          onClick={() => setSelectedProvider(TEEProvider.MARLIN)}
+        >
+          <div className="provider-circle">
+            <img 
+              src="/assets/marlin-logo.svg" 
+              alt="Marlin Oyster" 
+              onError={(e) => {
+                e.currentTarget.src = "https://marlin.org/assets/images/favicon.png";
+                e.currentTarget.onerror = null;
+              }}
+            />
+          </div>
+          <div className="provider-label">Marlin Oyster</div>
+          <div className="provider-status available">
+            <span className="status-dot"></span>
+            Available
+          </div>
+        </div>
+        
+        <div 
+          className={`provider-option ${!enarxAvailable ? 'disabled' : ''} ${selectedProvider === TEEProvider.ENARX ? 'selected' : ''}`}
+          onClick={() => enarxAvailable && setSelectedProvider(TEEProvider.ENARX)}
+        >
+          <div className="provider-circle">
+            <img 
+              src="/assets/enarx-logo.svg" 
+              alt="Enarx" 
+              onError={(e) => {
+                e.currentTarget.src = "https://enarx.dev/favicon.png";
+                e.currentTarget.onerror = null;
+              }}
+            />
+          </div>
+          <div className="provider-label">Enarx (Local)</div>
+          <div className={`provider-status ${enarxAvailable ? 'available' : 'unavailable'}`}>
+            <span className="status-dot"></span>
+            {enarxAvailable ? 'Available' : 'Unavailable'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="tee-zone-modal">
       <div className="modal-header">
@@ -588,7 +717,11 @@ export function TEEZone({ onClose }: TEEZoneProps) {
       </div>
 
       <div className="modal-content">
-        {!selectedFeature ? (
+        {!selectedProvider ? (
+          // 首先選擇TEE供應商
+          renderProviderSelection()
+        ) : !selectedFeature ? (
+          // 然後選擇功能
           <div className="tee-features">
             <h3>{t('teeZone.selectFeature')}</h3>
             <div className="tee-feature-grid">
@@ -621,6 +754,19 @@ export function TEEZone({ onClose }: TEEZoneProps) {
                 <span>{t('teeZone.visitAnalytics')}</span>
               </button>
             </div>
+            <div className="provider-info">
+              <p>
+                <span className="provider-label">
+                  {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
+                </span>
+                <button className="change-provider-button" onClick={resetState}>
+                  Change Provider
+                </button>
+              </p>
+              <p className="provider-endpoint">
+                API Endpoint: <code>{getApiEndpoint()}</code>
+              </p>
+            </div>
           </div>
         ) : (
           <div className="tee-form-container">
@@ -631,6 +777,11 @@ export function TEEZone({ onClose }: TEEZoneProps) {
                   ↩ {t('teeZone.back')}
                 </button>
               </h3>
+              <div className="provider-indicator">
+                <span className="provider-label">
+                  {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
+                </span>
+              </div>
             </div>
             
             {selectedFeature === TEEFeature.LOCATION_REGISTRATION && renderRegistrationForm()}

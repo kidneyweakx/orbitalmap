@@ -83,3 +83,134 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* 添加TEE供應商選擇介面的CSS樣式 */
+.provider-options {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.provider-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.provider-option:hover:not(.disabled) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.provider-option.selected {
+  background-color: rgba(0, 100, 255, 0.1);
+}
+
+.provider-option.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.provider-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  border: 3px solid #f0f0f0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.provider-option.selected .provider-circle {
+  border-color: #2684ff;
+  transform: scale(1.05);
+}
+
+.provider-option.disabled .provider-circle {
+  background-color: #f0f0f0;
+  border-color: #ddd;
+}
+
+.provider-circle img {
+  max-width: 70%;
+  max-height: 70%;
+  object-fit: contain;
+}
+
+.provider-label {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.provider-status {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.provider-status.available .status-dot {
+  background-color: #4CAF50;
+}
+
+.provider-status.unavailable .status-dot {
+  background-color: #9e9e9e;
+}
+
+.provider-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.change-provider-button {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.change-provider-button:hover {
+  background-color: #f0f0f0;
+}
+
+.provider-endpoint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.provider-endpoint code {
+  background-color: #f0f0f0;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.provider-indicator {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
