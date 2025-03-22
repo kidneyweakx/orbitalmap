@@ -1,13 +1,26 @@
 {
-  "name": "contracts",
+  "name": "poi-marketplace",
   "module": "index.ts",
-  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Trusted POI marketplace using ERC-7683 for cross-chain bidding and verification",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
-    "@types/bun": "latest",
-    "hardhat": "^2.22.19"
+    "@nomicfoundation/hardhat-ethers": "^3.0.4",
+    "@nomicfoundation/hardhat-verify": "^2.0.3",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/node": "^20.11.28",
+    "bun-types": "latest",
+    "ethers": "^6.11.1",
+    "hardhat": "^2.22.1",
+    "typescript": "^5.4.2"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "verify": "hardhat verify"
   }
 }
