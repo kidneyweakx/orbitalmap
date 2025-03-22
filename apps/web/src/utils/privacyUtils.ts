@@ -130,6 +130,8 @@ export async function generatePrivacyHeatmap(bounds: {
   east: number;
   west: number;
 }): Promise<FeatureCollection> {
+  console.log('[DEBUG] generatePrivacyHeatmap called with bounds:', bounds);
+  
   // In a real implementation, this would call a TEE endpoint
   
   // For demonstration, generate random heatmap points
@@ -137,6 +139,8 @@ export async function generatePrivacyHeatmap(bounds: {
   
   // Generate random points within the bounds
   const pointCount = Math.floor(Math.random() * 20) + 10;
+  console.log('[DEBUG] Generating', pointCount, 'random points for heatmap');
+  
   for (let i = 0; i < pointCount; i++) {
     const lng = bounds.west + Math.random() * (bounds.east - bounds.west);
     const lat = bounds.south + Math.random() * (bounds.north - bounds.south);
@@ -154,8 +158,18 @@ export async function generatePrivacyHeatmap(bounds: {
     });
   }
   
-  return {
+  const result: FeatureCollection = {
     type: "FeatureCollection",
     features: points,
   };
+  
+  console.log('[DEBUG] Generated heatmap data:', 
+    result.type,
+    'with',
+    result.features.length,
+    'points. First point:',
+    result.features.length > 0 ? JSON.stringify(result.features[0]) : 'none'
+  );
+  
+  return result;
 } 

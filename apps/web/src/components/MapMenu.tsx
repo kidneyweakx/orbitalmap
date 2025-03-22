@@ -54,6 +54,8 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [showZKProofCard, setShowZKProofCard] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(true); // Default to privacy mode on
+  // Keep state variable for when heatmap functionality is restored
+   
   const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false);
   
   // Effect to handle map clicks
@@ -495,6 +497,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   };
 
   const handleToggleHeatmap = () => {
+    // Re-enable heatmap functionality
     const newState = !showPrivacyHeatmap;
     setShowPrivacyHeatmap(newState);
     if (onTogglePrivacyHeatmap) {

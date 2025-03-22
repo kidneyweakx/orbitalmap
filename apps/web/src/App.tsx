@@ -592,10 +592,16 @@ function App() {
     setShowAnalyticsModal(false);
   };
 
-  // Handle toggle privacy heatmap
+  // Privacy heatmap toggle handler
   const handleTogglePrivacyHeatmap = (isVisible: boolean) => {
+    console.log('[DEBUG] App - handleTogglePrivacyHeatmap called with isVisible:', isVisible);
     setShowPrivacyHeatmap(isVisible);
   };
+
+  // Debug logging for map and heatmap state
+  useEffect(() => {
+    console.log('[DEBUG] App state - map:', !!map?.current, 'showPrivacyHeatmap:', showPrivacyHeatmap);
+  }, [map, showPrivacyHeatmap]);
 
   // Only render the map interface when authenticated
   // Otherwise show the login screen
@@ -649,8 +655,8 @@ function App() {
           
           {/* Privacy Heatmap Layer */}
           <PrivacyHeatmapLayer 
-            map={map.current}
-            isVisible={showPrivacyHeatmap}
+            map={map?.current} 
+            isVisible={showPrivacyHeatmap} 
           />
           
           {/* Location Analytics Modal */}
