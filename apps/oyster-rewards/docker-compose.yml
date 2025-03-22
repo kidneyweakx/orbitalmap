@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: kidneyweakx/oyster-rewards:latest
     ports:
       - "8080:8080"
     environment:

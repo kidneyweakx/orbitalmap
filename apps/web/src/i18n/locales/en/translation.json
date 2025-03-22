@@ -12,7 +12,8 @@
     "teeZone": "TEE Zone",
     "nillionLLM": "Nillion LLM",
     "testAPI": "API Test",
-    "toolsMenu": "Tools & Settings"
+    "toolsMenu": "Tools & Settings",
+    "treasureHunter": "Treasure Hunter"
   },
   "privacy": {
     "enabled": "Privacy Enabled",
@@ -342,5 +343,26 @@
     "routeShortcut": "Suggest a perfect day trip itinerary",
     "eventsShortcut": "Are there any events happening now?",
     "hiddenGemsShortcut": "Show me hidden gems around here"
+  },
+  "treasureBox": {
+    "title": "Treasure Hunter Mode",
+    "selectedArea": "Selected Area",
+    "coordinates": "Coordinates",
+    "availablePremiumPOIs": "Available Premium Points of Interest",
+    "noPremiumPOIs": "No premium Points of Interest available in this area",
+    "subscriptionDetails": "Subscription Details",
+    "premiumDescription": "Subscribe to unlock this premium point of interest and discover exclusive content.",
+    "price": "Subscription Price",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing...",
+    "subscribed": "Subscribed",
+    "subscriptionSuccess": "Subscription successful! You now have access to this premium point of interest.",
+    "subscriptionFailed": "Subscription failed. Please try again.",
+    "errorNotLoggedIn": "You need to login first to subscribe to premium points of interest.",
+    "errorNoWallet": "No wallet is available. Please connect your wallet first.",
+    "errorSwitchingChain": "Failed to switch to the Sepolia network. Make sure your wallet is properly configured.",
+    "howItWorks": "How Treasure Hunter Mode Works",
+    "howItWorksDescription": "Subscribe to premium Points of Interest (POIs) to unlock exclusive content and rewards. Your subscription is recorded on the blockchain and gives you permanent access.",
+    "crossChainInfo": "This feature uses cross-chain technology between Sepolia testnet (L1) and T1 protocol (L2) for secure and efficient subscriptions."
   }
 }

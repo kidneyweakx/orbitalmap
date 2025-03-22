@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -14,6 +14,9 @@ import { validateRewardCollection, updateExplorationStats, generateRewardsAround
 import { PrivacyHeatmapLayer } from './components/PrivacyHeatmapLayer'
 import { LocationAnalyticsModal } from './components/LocationAnalyticsModal'
 import { MapChatAssistant } from './components/MapChatAssistant'
+import { TreasureBox } from './components/TreasureBox'
+import { POI } from './utils/contractUtils'
+import { getPOIsInArea } from './utils/contractUtils'
 
 // Create theme context
 export type ThemeMode = 'dark' | 'light';
@@ -58,6 +61,15 @@ function App() {
   
   // MapMenu state
   const [showMapMenu, setShowMapMenu] = useState(false)
+  
+  // New state for Treasure Box
+  const [showTreasureBox, setShowTreasureBox] = useState(false)
+  const [selectedArea, setSelectedArea] = useState<{
+    name: string;
+    coordinates: [number, number]; // [lng, lat]
+    radius: number; // radius in kilometers
+  } | undefined>(undefined)
+  const [poisInArea, setPoisInArea] = useState<POI[]>([])
   
   // Effect to initialize the map after successful login
   useEffect(() => {
@@ -768,6 +780,81 @@ function App() {
     console.log('[DEBUG] App state - map:', !!map?.current, 'showPrivacyHeatmap:', showPrivacyHeatmap);
   }, [map, showPrivacyHeatmap]);
 
+  // Function to toggle the Treasure Box
+  const toggleTreasureBox = useCallback((show?: boolean) => {
+    setShowTreasureBox(prev => typeof show === 'boolean' ? show : !prev);
+  }, []);
+
+  // Function to select an area and open the Treasure Box
+  const handleSelectArea = useCallback(async (name: string, coordinates: [number, number], radius: number = 5) => {
+    setSelectedArea({
+      name,
+      coordinates,
+      radius
+    });
+    
+    // Set loading state
+    setPoisInArea([]);
+    
+    try {
+      // Calculate bounding box coordinates based on center and radius
+      const lat = coordinates[1];
+      const lng = coordinates[0];
+      const latDelta = radius * 0.01; // Approximate conversion to degrees
+      const lngDelta = radius * 0.01 / Math.cos(lat * Math.PI / 180);
+      
+      // Fetch POIs in the selected area from the contract
+      const pois = await getPOIsInArea(
+        lat - latDelta, // minLat
+        lat + latDelta, // maxLat
+        lng - lngDelta, // minLng
+        lng + lngDelta  // maxLng
+      );
+      
+      console.log('Found POIs:', pois);
+      setPoisInArea(pois);
+    } catch (error) {
+      console.error('Error fetching POIs:', error);
+      // Fallback to example data if there's an error
+      setPoisInArea([
+        {
+          id: '1',
+          name: 'Secret Mountain View',
+          lat: coordinates[1] + 0.01,
+          lng: coordinates[0] + 0.01,
+          owner: '0x123...',
+          stake: BigInt(100000000000000),
+          verificationState: 1, // Verified
+          timestamp: BigInt(Date.now()),
+          isSubscriptionRequired: true,
+          subscriptionPrice: BigInt(10000000000000000) // 0.01 ETH
+        },
+        {
+          id: '2',
+          name: 'Hidden Valley Trail',
+          lat: coordinates[1] - 0.01,
+          lng: coordinates[0] - 0.01,
+          owner: '0x456...',
+          stake: BigInt(200000000000000),
+          verificationState: 1, // Verified
+          timestamp: BigInt(Date.now()),
+          isSubscriptionRequired: true,
+          subscriptionPrice: BigInt(5000000000000000) // 0.005 ETH
+        }
+      ]);
+    }
+    
+    toggleTreasureBox(true);
+  }, [toggleTreasureBox]);
+
+  // Add an option to the Navbar to open the Treasure Box in developer mode
+  const handleDevModeOpenTreasureBox = () => {
+    if (map.current) {
+      const center = map.current.getCenter();
+      handleSelectArea('Current Map Center', [center.lng, center.lat]);
+    }
+  };
+
   // Only render the map interface when authenticated
   // Otherwise show the login screen
   return (
@@ -779,6 +866,7 @@ function App() {
         setShowHoverEffects={setShowHoverEffects}
         onTitleClick={handleToggleMapMenu}
         handleShowBadgesModal={handleShowBadgesModal}
+        onShowTreasureBox={handleDevModeOpenTreasureBox}
       />
 
       {/* Map Menu as left sidebar */}
@@ -858,6 +946,19 @@ function App() {
             map={map?.current}
             userLocation={clickedPosition || undefined}
           />
+          
+          {/* TreasureBox component */}
+          {showTreasureBox && (
+            <TreasureBox 
+              onClose={() => toggleTreasureBox(false)}
+              selectedArea={selectedArea}
+              pois={poisInArea}
+              onSubscriptionSuccess={() => {
+                // You could update some state, reload POIs, or show a notification
+                console.log('Subscription successful!');
+              }}
+            />
+          )}
         </>
       ) : (
         <Login 

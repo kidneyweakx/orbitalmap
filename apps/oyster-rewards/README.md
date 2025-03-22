@@ -102,4 +102,45 @@ cargo bench
 
 ## 許可證
 
-MIT 或 Apache-2.0，由您選擇。 
+MIT 或 Apache-2.0，由您選擇。
+
+## Deployment to Oyster CVM
+
+This project includes scripts for easy deployment to Oyster CVM.
+
+### Prerequisites
+
+1. Install the Oyster CVM CLI
+2. Ensure you have Docker installed and configured
+3. Have a wallet private key for Oyster CVM deployments
+
+### Deployment
+
+To deploy the application, use the provided deployment script:
+
+```bash
+./deploy.sh <wallet-private-key> [duration_minutes]
+```
+
+Options:
+- `<wallet-private-key>`: Required. Your wallet private key for authentication
+- `[duration_minutes]`: Optional. Duration of deployment in minutes (default: 15)
+
+You can also specify the deployment action as a third parameter:
+- `./deploy.sh <key> <minutes> build` - Only build and push the Docker image
+- `./deploy.sh <key> <minutes> deploy` - Only deploy (uses existing Docker image)
+- `./deploy.sh <key> <minutes> all` - Build, push, and deploy
+
+### Stopping a Deployment
+
+To stop a running deployment, use the stop script:
+
+```bash
+./stop.sh <wallet-private-key> [deployment-id]
+```
+
+If you don't provide a deployment ID, the script will list active deployments and prompt you to select one.
+
+### Docker Image
+
+The application uses the Docker image `kidneyweakx/oyster-rewards:latest`. 

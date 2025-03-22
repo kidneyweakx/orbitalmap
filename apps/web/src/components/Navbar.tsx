@@ -16,9 +16,10 @@ interface NavbarProps {
   setShowHoverEffects?: React.Dispatch<React.SetStateAction<boolean>>;
   onTitleClick?: () => void;
   handleShowBadgesModal: () => void;
+  onShowTreasureBox?: () => void;
 }
 
-export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects, onTitleClick, handleShowBadgesModal }: NavbarProps) {
+export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects, onTitleClick, handleShowBadgesModal, onShowTreasureBox }: NavbarProps) {
   const { t, i18n } = useTranslation();
   const { isAuthenticated, login } = useAuth();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
@@ -86,6 +87,14 @@ export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, se
                 <button onClick={handleOpenTestAPI}>
                   <span className="emoji">🧪</span> {t('navbar.testAPI')}
                 </button>
+                {onShowTreasureBox && (
+                  <button onClick={() => {
+                    onShowTreasureBox();
+                    setShowToolbox(false);
+                  }}>
+                    <span className="emoji">💰</span> {t('navbar.treasureHunter')}
+                  </button>
+                )}
               </div>
             )}
           </div>

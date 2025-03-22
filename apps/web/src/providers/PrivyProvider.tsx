@@ -28,6 +28,7 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
         },
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
+          noPromptOnSignature: true,
         },
         supportedChains: [
           { 
@@ -65,11 +66,36 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
               decimals: 18
             },
             rpcUrls: {
-              default: { http: ['https://rpc.sepolia.org'] },
-              public: { http: ['https://rpc.sepolia.org'] }
-            }
+              default: { http: ['https://1rpc.io/sepolia'] },
+              public: { http: ['https://1rpc.io/sepolia'] }
+            },
+            blockExplorers: {
+              default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' }
+            },
+            testnet: true
           },
+          {
+            id: 299792,
+            name: 'T1',
+            nativeCurrency: {
+              name: 'T1 Ether',
+              symbol: 'ETH',
+              decimals: 18
+            },
+            rpcUrls: {
+              default: { http: ['https://rpc.v006.t1protocol.com'] },
+              public: { http: ['https://rpc.v006.t1protocol.com'] }
+            },
+            blockExplorers: {
+              default: { name: 'T1 Explorer', url: 'https://explorer.v006.t1protocol.com' }
+            },
+            testnet: true
+          }
         ],
+        defaultChain: {
+          id: 11155111, // Sepolia as default chain
+          name: 'Sepolia',
+        },
       }}
     >
       {children}

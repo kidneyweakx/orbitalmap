@@ -15,7 +15,8 @@
     "mapMenu": "地图菜单",
     "search": "搜索",
     "logout": "退出",
-    "toolsMenu": "工具與設置"
+    "toolsMenu": "工具與設置",
+    "treasureHunter": "寶藏獵人"
   },
   "locationModal": {
     "title": "位置選擇",
@@ -211,6 +212,27 @@
   "testAPI": {
     "title": "無伺服器 API 測試",
     "selectEndpoint": "選擇要測試的 API 端點"
+  },
+  "treasureBox": {
+    "title": "寶藏獵人模式",
+    "selectedArea": "已選區域",
+    "coordinates": "坐標",
+    "availablePremiumPOIs": "可用的高級興趣點",
+    "noPremiumPOIs": "該區域沒有可用的高級興趣點",
+    "subscriptionDetails": "訂閱詳情",
+    "premiumDescription": "訂閱以解鎖此高級興趣點並發現獨家內容。",
+    "price": "訂閱價格",
+    "subscribe": "訂閱",
+    "subscribing": "訂閱中...",
+    "subscribed": "已訂閱",
+    "subscriptionSuccess": "訂閱成功！您現在可以訪問此高級興趣點。",
+    "subscriptionFailed": "訂閱失敗。請再試一次。",
+    "errorNotLoggedIn": "您需要先登錄才能訂閱高級興趣點。",
+    "errorNoWallet": "沒有可用的錢包。請先連接您的錢包。",
+    "errorSwitchingChain": "切換到Sepolia網絡失敗。請確保您的錢包配置正確。",
+    "howItWorks": "寶藏獵人模式如何運作",
+    "howItWorksDescription": "訂閱高級興趣點(POI)以解鎖獨家內容和獎勵。您的訂閱記錄在區塊鏈上，並為您提供永久訪問權限。",
+    "crossChainInfo": "此功能使用Sepolia測試網絡(L1)和T1協議(L2)之間的跨鏈技術，以確保安全高效的訂閱。"
   },
   "mapChat": {
     "title": "旅行助手",
