@@ -3,6 +3,9 @@
   "workspaces": {
     "": {
       "name": "orbitalmap",
+      "dependencies": {
+        "alea": "^1.0.1",
+      },
       "devDependencies": {
         "prettier": "^3.5.3",
         "turbo": "^2.4.4",
@@ -30,6 +33,7 @@
         "@noir-lang/noir_js": "1.0.0-beta.2",
         "@noir-lang/noir_wasm": "1.0.0-beta.2",
         "@privy-io/react-auth": "^2.6.4",
+        "alea": "^1.0.1",
         "i18next": "^23.10.1",
         "i18next-browser-languagedetector": "^7.2.0",
         "mapbox-gl": "^3.10.0",
@@ -599,6 +603,8 @@
     "agentkeepalive": ["agentkeepalive@4.6.0", "", { "dependencies": { "humanize-ms": "^1.2.1" } }, "sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ=="],
 
     "ajv": ["ajv@6.12.6", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g=="],
+
+    "alea": ["alea@1.0.1", "", {}, "sha512-QU+wv+ziDXaMxRdsQg/aH7sVfWdhKps5YP97IIwFkHCsbDZA3k87JXoZ5/iuemf4ntytzIWeScrRpae8+lDrXA=="],
 
     "ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
 

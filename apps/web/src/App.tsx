@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './App.css'
-import { Reward, RewardValue, generateMapRewards, rewardsToHeatmapFormat, findRewardsNearLocation } from './utils/rewardGenerator'
+import { Reward, RewardValue, generateMapRewards, rewardsToHeatmapFormat, findRewardsNearLocation, generateMapRewardsOnLand } from './utils/rewardGenerator'
 import { MapMenu } from './components/MapMenu'
 import { Navbar } from './components/Navbar'
 import { Login } from './components/Login'
@@ -237,21 +237,33 @@ function App() {
 
   // Generate initial rewards based on map bounds
   const generateInitialRewards = async () => {
-    if (!map.current) return;
-    
-    const bounds = map.current.getBounds();
-    if (!bounds) return;
-    
-    const boundsObj = {
-      north: bounds.getNorth(),
-      south: bounds.getSouth(),
-      east: bounds.getEast(),
-      west: bounds.getWest()
-    };
+    if (!map.current) {
+      console.error("Cannot generate rewards: map not initialized");
+      return;
+    }
     
     try {
-      // Use local generation instead of API
-      const newRewards = generateMapRewards(boundsObj, 50);
+      // 直接獲取地圖邊界
+      const bounds = map.current.getBounds();
+      
+      if (!bounds) {
+        console.error("Failed to get map bounds");
+        return;
+      }
+      
+      const boundsObj = {
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest()
+      };
+      
+      console.log("Generating rewards with preference for land...");
+      
+      // 生成獎勵，不需等待地圖樣式加載
+      const newRewards = await generateMapRewardsOnLand(boundsObj, 50, map.current);
+      console.log(`Generated ${newRewards.length} rewards`);
+      
       setRewards(newRewards);
       
       // Initialize exploration stats
@@ -261,6 +273,29 @@ function App() {
       }));
     } catch (error) {
       console.error('Failed to generate map rewards:', error);
+      
+      // 如果出現錯誤，使用基本的獎勵生成方法
+      if (map.current) {
+        const bounds = map.current.getBounds();
+        if (bounds) {
+          console.log("Using fallback reward generation method");
+          const boundsObj = {
+            north: bounds.getNorth(),
+            south: bounds.getSouth(),
+            east: bounds.getEast(),
+            west: bounds.getWest()
+          };
+          
+          const fallbackRewards = generateMapRewards(boundsObj, 50);
+          setRewards(fallbackRewards);
+          
+          // Initialize exploration stats
+          setExplorationStats(prev => ({
+            ...prev,
+            totalPossibleRewards: fallbackRewards.length
+          }));
+        }
+      }
     }
   };
 
@@ -459,6 +494,7 @@ function App() {
 
   // Clean up indicators when clearing or creating new ones
   const cleanupIndicators = () => {
+    // 不要移除 hoverMarkerRef 和 tooltipRef
     indicatorsRef.current.forEach(indicator => {
       if (indicator.parentNode) {
         indicator.parentNode.removeChild(indicator);
@@ -482,30 +518,55 @@ function App() {
 
   // Handle hover effects visibility state change
   useEffect(() => {
+    console.log("Hover effect state changed:", showHoverEffects);
+    
     if (showHoverEffects) {
       if (!map.current || !mapContainer.current) return;
       
+      console.log("Initializing hover marker effect");
+      
+      // Cleanup any existing marker and tooltip first
+      if (hoverMarkerRef.current && hoverMarkerRef.current.parentNode) {
+        hoverMarkerRef.current.parentNode.removeChild(hoverMarkerRef.current);
+        hoverMarkerRef.current = null;
+      }
+      
+      if (tooltipRef.current && tooltipRef.current.parentNode) {
+        tooltipRef.current.parentNode.removeChild(tooltipRef.current);
+        tooltipRef.current = null;
+      }
+      
       // Create hover marker element
       const marker = document.createElement('div');
+      marker.id = 'hover-marker-element';
       marker.className = 'hover-marker';
+      marker.style.display = 'none'; // Hide initially until we have a position
       mapContainer.current.appendChild(marker);
       hoverMarkerRef.current = marker;
       
       // Create tooltip element
       const tooltip = document.createElement('div');
+      tooltip.id = 'rewards-tooltip-element';
       tooltip.className = 'rewards-tooltip';
       tooltip.style.display = 'none';
       mapContainer.current.appendChild(tooltip);
       tooltipRef.current = tooltip;
       
+      console.log("Created hover marker and tooltip elements");
+      
       // Setup mousemove handler on map
       const handleMouseMove = (e: mapboxgl.MapMouseEvent) => {
-        if (!map.current) return;
+        if (!map.current || !hoverMarkerRef.current || !tooltipRef.current) {
+          console.log("Missing refs in mousemove handler");
+          return;
+        }
         
         const { lng, lat } = e.lngLat;
         hoveredPositionRef.current = [lng, lat];
         
-        // Update marker position
+        // Show and update marker position
+        hoverMarkerRef.current.style.display = 'block';
+        hoverMarkerRef.current.style.zIndex = '1000';
         updateHoverMarker([lng, lat]);
         
         // Check for nearby rewards
@@ -516,18 +577,83 @@ function App() {
           updateRewardsTooltip([lng, lat], nearbyRewards);
         } else {
           // Hide tooltip if no rewards nearby
-          if (tooltipRef.current) {
-            tooltipRef.current.style.display = 'none';
-          }
+          tooltipRef.current.style.display = 'none';
+        }
+      };
+      
+      // Handle mouse leave
+      const handleMouseLeave = () => {
+        console.log("Mouse left the map");
+        if (hoverMarkerRef.current) {
+          hoverMarkerRef.current.style.display = 'none';
+        }
+        
+        if (tooltipRef.current) {
+          tooltipRef.current.style.display = 'none';
         }
       };
       
       map.current.on('mousemove', handleMouseMove);
+      map.current.on('mouseout', handleMouseLeave);
+      
+      // Also handle when the map moves to recreate markers
+      const handleMoveEnd = () => {
+        console.log("Map move ended, checking hover elements");
+        if (!map.current || !mapContainer.current) return;
+        
+        // Recreate marker if it doesn't exist
+        if (!hoverMarkerRef.current || !hoverMarkerRef.current.parentNode) {
+          console.log("Recreating hover marker after map move");
+          const marker = document.createElement('div');
+          marker.id = 'hover-marker-element';
+          marker.className = 'hover-marker';
+          mapContainer.current.appendChild(marker);
+          hoverMarkerRef.current = marker;
+          
+          // If we have a stored position, update the marker
+          if (hoveredPositionRef.current) {
+            hoverMarkerRef.current.style.display = 'block';
+            updateHoverMarker(hoveredPositionRef.current);
+          } else {
+            hoverMarkerRef.current.style.display = 'none';
+          }
+        }
+        
+        // Recreate tooltip if it doesn't exist
+        if (!tooltipRef.current || !tooltipRef.current.parentNode) {
+          console.log("Recreating tooltip after map move");
+          const tooltip = document.createElement('div');
+          tooltip.id = 'rewards-tooltip-element';
+          tooltip.className = 'rewards-tooltip';
+          tooltip.style.display = 'none';
+          mapContainer.current.appendChild(tooltip);
+          tooltipRef.current = tooltip;
+          
+          // If we have a position and rewards, show tooltip
+          if (hoveredPositionRef.current) {
+            const nearbyRewards = findRewardsNearLocation(hoveredPositionRef.current, rewards, 0.1);
+            if (nearbyRewards.length > 0) {
+              updateRewardsTooltip(hoveredPositionRef.current, nearbyRewards);
+            }
+          }
+        }
+      };
+      
+      // 確保地圖初始化後能立即顯示 hover marker
+      if (map.current.loaded()) {
+        console.log("Map already loaded, initializing hover marker immediately");
+        handleMoveEnd();
+      }
+      
+      map.current.on('moveend', handleMoveEnd);
       
       return () => {
+        console.log("Cleaning up hover effect");
         map.current?.off('mousemove', handleMouseMove);
-        cleanupIndicators();
+        map.current?.off('mouseout', handleMouseLeave);
+        map.current?.off('moveend', handleMoveEnd);
         
+        // 不使用 cleanupIndicators() 來避免移除其他元素
         if (hoverMarkerRef.current && hoverMarkerRef.current.parentNode) {
           hoverMarkerRef.current.parentNode.removeChild(hoverMarkerRef.current);
           hoverMarkerRef.current = null;
@@ -539,6 +665,7 @@ function App() {
         }
       };
     } else {
+      console.log("Hover effect disabled, removing elements");
       // Cleanup hover effect elements when disabled
       if (hoverMarkerRef.current && hoverMarkerRef.current.parentNode) {
         hoverMarkerRef.current.parentNode.removeChild(hoverMarkerRef.current);
@@ -554,43 +681,54 @@ function App() {
 
   // Update hover marker position
   const updateHoverMarker = (position: [number, number]) => {
-    if (!map.current || !hoverMarkerRef.current) return;
+    if (!map.current || !hoverMarkerRef.current) {
+      console.log("Cannot update hover marker: missing references");
+      return;
+    }
     
-    const pixelPos = map.current.project(position);
-    hoverMarkerRef.current.style.left = `${pixelPos.x}px`;
-    hoverMarkerRef.current.style.top = `${pixelPos.y}px`;
+    try {
+      const pixelPos = map.current.project(position);
+      hoverMarkerRef.current.style.left = `${pixelPos.x}px`;
+      hoverMarkerRef.current.style.top = `${pixelPos.y}px`;
+    } catch (error) {
+      console.error("Error updating hover marker position:", error);
+    }
   };
 
   // Update tooltip showing nearby rewards
   const updateRewardsTooltip = (position: [number, number], nearby: Reward[]) => {
     if (!map.current || !tooltipRef.current) return;
     
-    const pixelPos = map.current.project(position);
-    
-    // Position tooltip to the right of the cursor
-    tooltipRef.current.style.left = `${pixelPos.x + 15}px`;
-    tooltipRef.current.style.top = `${pixelPos.y - 15}px`;
-    tooltipRef.current.style.display = 'block';
-    
-    // Generate HTML content for the tooltip
-    let content = '<div class="tooltip-title">Nearby Rewards</div>';
-    content += '<div class="tooltip-rewards">';
-    
-    nearby.forEach(reward => {
-      const valueClass = reward.value === RewardValue.High ? 'high' : 
-                         reward.value === RewardValue.Medium ? 'medium' : 'low';
+    try {
+      const pixelPos = map.current.project(position);
       
-      content += `
-        <div class="tooltip-reward ${valueClass}">
-          <span class="reward-emoji">${reward.emoji}</span>
-          <span class="reward-name">Reward #${reward.id.substring(0, 6)}</span>
-        </div>
-      `;
-    });
-    
-    content += '</div>';
-    
-    tooltipRef.current.innerHTML = content;
+      // Position tooltip to the right of the cursor
+      tooltipRef.current.style.left = `${pixelPos.x + 15}px`;
+      tooltipRef.current.style.top = `${pixelPos.y - 15}px`;
+      tooltipRef.current.style.display = 'block';
+      
+      // Generate HTML content for the tooltip
+      let content = '<div class="tooltip-title">Nearby Rewards</div>';
+      content += '<div class="tooltip-rewards">';
+      
+      nearby.forEach(reward => {
+        const valueClass = reward.value === RewardValue.High ? 'high' : 
+                         reward.value === RewardValue.Medium ? 'medium' : 'low';
+        
+        content += `
+          <div class="tooltip-reward ${valueClass}">
+            <span class="reward-emoji">${reward.emoji}</span>
+            <span class="reward-name">Reward #${reward.id.substring(0, 6)}</span>
+          </div>
+        `;
+      });
+      
+      content += '</div>';
+      
+      tooltipRef.current.innerHTML = content;
+    } catch (error) {
+      console.error("Error updating rewards tooltip:", error);
+    }
   };
 
   // Display badges modal
