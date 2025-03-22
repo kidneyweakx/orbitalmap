@@ -56,6 +56,9 @@ function App() {
     coordinates: [number, number];
   } | null>(null)
   
+  // MapMenu state
+  const [showMapMenu, setShowMapMenu] = useState(false)
+  
   // Effect to initialize the map after successful login
   useEffect(() => {
     if (isAuthenticated && showLocationModal) {
@@ -90,6 +93,11 @@ function App() {
     const newTheme = themeMode === 'dark' ? 'light' : 'dark';
     setThemeMode(newTheme);
     localStorage.setItem('theme', newTheme);
+  };
+  
+  // Function to toggle MapMenu
+  const handleToggleMapMenu = () => {
+    setShowMapMenu(!showMapMenu);
   };
   
   // Debug i18n
@@ -613,7 +621,25 @@ function App() {
         currentTheme={themeMode}
         showHoverEffects={showHoverEffects}
         setShowHoverEffects={setShowHoverEffects}
+        onTitleClick={handleToggleMapMenu}
+        handleShowBadgesModal={handleShowBadgesModal}
       />
+
+      {/* Map Menu as left sidebar , if clickedPosition is open click will close*/}
+      <div className={`map-menu-sidebar ${showMapMenu ? 'open' : ''}`}>
+        {isAuthenticated && (
+          <MapMenu
+            map={map.current}
+            clickedPosition={clickedPosition}
+            onClearClickedPosition={handleClearClickedPosition}
+            rewards={rewards}
+            setRewards={setRewards}
+            theme={themeMode}
+            onShowAnalytics={handleShowLocationAnalytics}
+            onTogglePrivacyHeatmap={handleTogglePrivacyHeatmap}
+          />
+        )}
+      </div>
 
       {isLoading ? (
         <div className="loading-container">
@@ -641,7 +667,8 @@ function App() {
             </div>
           )}
           
-          {clickedPosition && !showLocationModal && (
+          {/* Map Menu as left sidebar when clickedPosition open but clickTitle is closed*/}
+          <div className={`map-menu-sidebar ${clickedPosition && !showLocationModal && !showMapMenu ? 'open' : ''}`}>
             <MapMenu
               map={map.current}
               clickedPosition={clickedPosition}
@@ -652,8 +679,7 @@ function App() {
               onShowAnalytics={handleShowLocationAnalytics}
               onTogglePrivacyHeatmap={handleTogglePrivacyHeatmap}
             />
-          )}
-          
+          </div>
           {/* Privacy Heatmap Layer */}
           <PrivacyHeatmapLayer 
             map={map?.current} 
@@ -672,7 +698,6 @@ function App() {
           {/* Exploration indicator */}
           <ExplorationIndicator 
             stats={explorationStats}
-            onShowDetails={handleShowBadgesModal}
             hasBadges={hasNewBadges}
           />
           

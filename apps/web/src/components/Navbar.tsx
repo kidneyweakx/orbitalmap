@@ -14,9 +14,11 @@ interface NavbarProps {
   currentTheme: ThemeMode;
   showHoverEffects?: boolean;
   setShowHoverEffects?: React.Dispatch<React.SetStateAction<boolean>>;
+  onTitleClick?: () => void;
+  handleShowBadgesModal: () => void;
 }
 
-export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects }: NavbarProps) {
+export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, setShowHoverEffects, onTitleClick, handleShowBadgesModal }: NavbarProps) {
   const { t, i18n } = useTranslation();
   const { isAuthenticated, login } = useAuth();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
@@ -60,7 +62,7 @@ export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, se
   return (
     <>
       <div className="navbar">
-        <div className="navbar-title">{t('navbar.title')}</div>
+        <div className="navbar-title" onClick={onTitleClick} style={{ cursor: 'pointer' }}>{t('navbar.title')}</div>
         <div className="navbar-controls">
           <div className="toolbox-dropdown">
             <button
@@ -120,7 +122,9 @@ export function Navbar({ toggleTheme, currentTheme, showHoverEffects = false, se
           </div>
           
           {isAuthenticated ? (
-            <UserProfile />
+            <UserProfile 
+              onShowBadges={handleShowBadgesModal}
+            />
           ) : (
             <button 
               className="login-nav-button" 

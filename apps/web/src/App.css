@@ -46,27 +46,46 @@ body.light-theme {
   position: relative;
 }
 
-.map-menu {
+/* MapMenu sidebar styles */
+.map-menu-sidebar {
   position: fixed;
-  top: 60px;
+  top: 60px; /* Leave space for navbar */
+  left: -350px; /* Start off-screen */
+  bottom: 0;
+  width: 350px;
+  max-height: none;
+  height: calc(100vh - 60px);
+  background: var(--card-background);
+  box-shadow: 2px 0 12px var(--shadow-color);
+  transition: transform 0.3s ease;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.map-menu-sidebar.open {
+  transform: translateX(350px);
+}
+
+/* Adjust original map-menu styles for the sidebar */
+.map-menu {
+  position: relative; /* Change from fixed to relative */
+  top: 0;
   right: 0;
   bottom: 0;
   background: var(--card-background);
   padding: 20px;
-  width: 350px;
-  max-height: none;
-  height: calc(100vh - 60px);
+  width: 100%; /* Take full width of sidebar */
+  height: 100%;
   overflow-y: auto;
   color: var(--text-color);
-  transition: transform 0.3s ease, background-color 0.3s, color 0.3s, box-shadow 0.3s;
-  z-index: 10;
-  box-shadow: -4px 0 12px var(--shadow-color);
+  z-index: 1;
+  box-shadow: none; /* Remove original shadow */
   border-radius: 0;
-  transform: translateX(0);
+  transform: none !important; /* Remove original transform */
 }
 
 .map-menu.collapsed {
-  transform: translateX(100%);
+  display: none; /* Hide completely instead of transform */
 }
 
 .menu-collapse-toggle {
@@ -401,6 +420,12 @@ button:disabled {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--header-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.navbar-title:hover {
+  color: var(--primary-color);
 }
 
 .navbar-controls {
@@ -468,8 +493,13 @@ button:disabled {
     font-size: 1.2rem;
   }
 
-  .map-menu {
-    width: 280px;
+  .map-menu-sidebar {
+    width: 300px;
+    left: -300px;
+  }
+  
+  .map-menu-sidebar.open {
+    transform: translateX(300px);
   }
 
   .language-menu {
@@ -525,8 +555,13 @@ button:disabled {
     width: 100%;
   }
 
-  .map-menu {
+  .map-menu-sidebar {
     width: 100%;
+    left: -100%;
+  }
+  
+  .map-menu-sidebar.open {
+    transform: translateX(100%);
   }
   
   .hamburger-menu {
@@ -728,8 +763,13 @@ button:disabled {
 
 /* RWD updates for mobile */
 @media screen and (max-width: 768px) {
-  .map-menu {
+  .map-menu-sidebar {
     width: 300px;
+    left: -300px;
+  }
+  
+  .map-menu-sidebar.open {
+    transform: translateX(300px);
   }
   
   .spot-card {
@@ -751,8 +791,13 @@ button:disabled {
 }
 
 @media screen and (max-width: 480px) {
-  .map-menu {
-    width: calc(100% - 20px);
+  .map-menu-sidebar {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .map-menu-sidebar.open {
+    transform: translateX(100%);
   }
   
   .location-controls {
@@ -924,6 +969,8 @@ button:disabled {
   --delete-btn-hover: #e60000;
   --form-border: #eee;
   --section-border: #eee;
+  --button-background: #f3f4f6;
+  --button-hover-background: #e5e7eb;
 }
 
 .dark-theme {
@@ -945,6 +992,8 @@ button:disabled {
   --delete-btn-hover: #d32f2f;
   --form-border: #444;
   --section-border: #444;
+  --button-background: #1f2937;
+  --button-hover-background: #374151;
 }
 
 .theme-toggle-button {
@@ -1062,12 +1111,13 @@ button:disabled {
 
 /* Mobile optimizations */
 @media screen and (max-width: 768px) {
-  .map-menu {
+  .map-menu-sidebar {
     width: 300px;
+    left: -300px;
   }
   
-  .map-menu.collapsed {
-    transform: translateY(calc(-100% + 40px));
+  .map-menu-sidebar.open {
+    transform: translateX(300px);
   }
   
   .tag-filter-btn {
@@ -1081,9 +1131,13 @@ button:disabled {
 }
 
 @media screen and (max-width: 480px) {
-  .map-menu {
-    width: calc(100% - 20px);
-    max-height: 60vh;
+  .map-menu-sidebar {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .map-menu-sidebar.open {
+    transform: translateX(100%);
   }
   
   .menu-collapse-toggle {
@@ -2914,5 +2968,141 @@ button:disabled {
   
   .recommendation-popup {
     max-width: 200px;
+  }
+}
+
+/* Side menu styles */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background-color: var(--background-color);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 10px var(--shadow-color);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  padding-top: 60px; /* Leave space for navbar */
+}
+
+.side-menu.open {
+  transform: translateX(300px);
+}
+
+.side-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.side-menu-title {
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--header-color);
+}
+
+.side-menu-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  border-radius: 50%;
+}
+
+.side-menu-close:hover {
+  background-color: var(--button-hover-background);
+}
+
+.side-menu-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.side-menu-button {
+  padding: 0.75rem 1rem;
+  background-color: var(--button-background);
+  color: var(--text-color);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+  font-size: 1rem;
+}
+
+.side-menu-button:hover {
+  background-color: var(--button-hover-background);
+}
+
+.side-menu-button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.language-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.language-title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--header-color);
+}
+
+.language-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.language-buttons button {
+  padding: 0.5rem;
+  background-color: var(--button-background);
+  color: var(--text-color);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.language-buttons button:hover {
+  background-color: var(--button-hover-background);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .side-menu {
+    width: 250px;
+    left: -250px;
+  }
+  
+  .side-menu.open {
+    transform: translateX(250px);
+  }
+}
+
+@media (max-width: 480px) {
+  .side-menu {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .side-menu.open {
+    transform: translateX(100%);
   }
 }

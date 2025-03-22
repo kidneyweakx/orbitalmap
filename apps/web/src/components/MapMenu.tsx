@@ -507,16 +507,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
 
   return (
     <>
-      {/* Hamburger menu button */}
-      <div 
-        className={`hamburger-menu ${!isMenuCollapsed ? 'active' : ''}`} 
-        onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-      
       <div className={`map-menu ${theme === 'dark' ? 'dark-theme' : ''} ${isMenuCollapsed ? 'collapsed' : ''}`}>
         <div className="menu-content">
           <div className="search-section">

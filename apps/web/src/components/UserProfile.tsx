@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '../providers/AuthContext';
 import { EMOJI_OPTIONS } from '../providers/PrivyProvider';
 
-export function UserProfile() {
+interface UserProfileProps {
+  onShowBadges: () => void;
+}
+export function UserProfile({ onShowBadges }: UserProfileProps) {
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -18,6 +21,7 @@ export function UserProfile() {
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
+
 
   return (
     <div className="user-profile-container">
@@ -45,7 +49,7 @@ export function UserProfile() {
               <span className="item-icon">👤</span>
               My Profile
             </button>
-            <button className="dropdown-item">
+            <button className="dropdown-item" onClick={onShowBadges}>
               <span className="item-icon">🏆</span>
               My Rewards
             </button>
