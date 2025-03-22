@@ -1,33 +1,32 @@
 {
-  "name": "poi-marketplace",
-  "version": "0.1.0",
-  "description": "Trusted POI marketplace using ERC-7683 for cross-chain bidding and verification",
-  "private": true,
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-viem": "^2.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.3",
-    "@nomicfoundation/hardhat-viem": "^2.0.6",
-    "@types/chai": "^4.3.11",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.11.28",
-    "bun-types": "latest",
-    "chai": "^4.4.1",
-    "dotenv": "^16.4.5",
-    "hardhat": "^2.22.1",
-    "typescript": "^5.4.2",
-    "viem": "^2.7.12"
-  },
+  "name": "contracts",
+  "version": "1.0.0",
+  "description": "POI Marketplace Smart Contracts",
   "scripts": {
+    "clean": "hardhat clean",
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "node": "hardhat node",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "deploy:t1": "hardhat run scripts/deploy.ts --network t1",
-    "verify:sepolia": "hardhat verify --network sepolia",
-    "verify:t1": "hardhat verify --network t1",
     "update:l1": "hardhat run scripts/updateL1.ts --network sepolia",
     "update:l1:dry": "DRY_RUN=true dotenv -e .env.test -- hardhat run scripts/updateL1.ts --network sepolia",
-    "clean": "hardhat clean",
-    "node": "hardhat node",
-    "coverage": "hardhat coverage"
+    "deploy:all": "bun run deploy:sepolia && bun run deploy:t1 && bun run update:l1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "chai": "^4.4.1",
+    "dotenv": "^16.3.1",
+    "dotenv-cli": "^7.4.0",
+    "hardhat": "^2.19.4",
+    "typescript": "^5.3.3",
+    "viem": "^2.7.12"
   }
 }

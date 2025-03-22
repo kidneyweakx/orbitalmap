@@ -2,6 +2,37 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { parseEther, zeroAddress, type Address, type Block } from "viem";
 
+// Define enum to match contract VerificationState
+enum VerificationState {
+  Pending = 0,
+  Verifying = 1,
+  Verified = 2,
+  Challenged = 3,
+  Rejected = 4
+}
+
+// Define POI interface to match contract return structure
+interface POI {
+  name: string;
+  owner: Address;
+  stakeAmount: bigint;
+  verified: boolean;
+  validator: Address;
+  proof: string;
+  timestamp: bigint;
+  challenged: boolean;
+  challengeEndTime: bigint;
+  state: number; // Changed to number to simplify comparisons
+}
+
+// Define Validator interface
+interface Validator {
+  isRegistered: boolean;
+  totalVerified: bigint;
+  reputation: bigint;
+  stakedAmount: bigint;
+}
+
 describe("POI Marketplace Contracts", function () {
   let l1ContractAddress: Address;
   let l2ContractAddress: Address;
@@ -12,10 +43,24 @@ describe("POI Marketplace Contracts", function () {
   
   // Helper function to mine blocks and advance time
   async function advanceTime(seconds: number) {
-    await publicClient.setNextBlockTimestamp(
-      await publicClient.getBlock({ blockTag: 'latest' }).then((b: Block) => BigInt(b.timestamp) + BigInt(seconds))
-    );
-    await publicClient.mine({ blocks: 1 });
+    await hre.network.provider.send("evm_increaseTime", [seconds]);
+    await hre.network.provider.send("evm_mine");
+  }
+  
+  // Helper function to parse POI from contract result
+  function parsePOI(result: any): POI {
+    return {
+      name: result.name,
+      owner: result.owner,
+      stakeAmount: result.stakeAmount,
+      verified: result.verified,
+      validator: result.validator,
+      proof: result.proof,
+      timestamp: result.timestamp,
+      challenged: result.challenged,
+      challengeEndTime: result.challengeEndTime,
+      state: Number(result.state)
+    };
   }
   
   beforeEach(async function () {
@@ -52,7 +97,7 @@ describe("POI Marketplace Contracts", function () {
     it("should set the owner correctly", async function () {
       const l1Contract = await hre.viem.getContractAt("contracts/L1POIMarketplace.sol:L1POIMarketplace", l1ContractAddress);
       const contractOwner = await l1Contract.read.owner();
-      expect(contractOwner).to.equal(owner.address);
+      expect(contractOwner.toLowerCase()).to.equal(owner.address.toLowerCase());
     });
     
     it("should have initial state values set correctly", async function () {
@@ -63,7 +108,7 @@ describe("POI Marketplace Contracts", function () {
       const challengeDuration = await l1Contract.read.challengeDuration();
       const validatorRewardPercentage = await l1Contract.read.validatorRewardPercentage();
       
-      expect(l2DestinationContract).to.equal(l2ContractAddress);
+      expect(l2DestinationContract.toLowerCase()).to.equal(l2ContractAddress.toLowerCase());
       expect(l2ChainId).to.equal(BigInt(31337));
       expect(totalPOIs).to.equal(BigInt(0));
       expect(challengeDuration).to.equal(BigInt(3 * 24 * 60 * 60)); // 3 days
@@ -92,7 +137,7 @@ describe("POI Marketplace Contracts", function () {
       
       // Check that the address didn't change
       const l2DestinationContract = await l1Contract.read.l2DestinationContract();
-      expect(l2DestinationContract).to.equal(l2ContractAddress);
+      expect(l2DestinationContract.toLowerCase()).to.equal(l2ContractAddress.toLowerCase());
     });
     
     it("should register a new POI", async function () {
@@ -107,13 +152,14 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check POI was registered
-      const poi = await l1Contract.read.getPOI([BigInt(0)]);
-      // Since we're getting a structured tuple, we need to access it by index
-      expect(poi[0]).to.equal(poiName); // name
-      expect(poi[1]).to.equal(user.address); // owner
-      expect(poi[2]).to.equal(stakeAmount); // stakeAmount
-      expect(poi[3]).to.equal(false); // verified
-      expect(poi[9]).to.equal(BigInt(1)); // state = VerificationState.Verifying
+      const poiResult = await l1Contract.read.getPOI([BigInt(0)]);
+      const poi = parsePOI(poiResult);
+      
+      expect(poi.name).to.equal(poiName);
+      expect(poi.owner.toLowerCase()).to.equal(user.address.toLowerCase());
+      expect(poi.stakeAmount).to.equal(stakeAmount);
+      expect(poi.verified).to.equal(false);
+      expect(poi.state).to.equal(VerificationState.Verifying);
     });
     
     it("should not allow registering a POI with insufficient stake", async function () {
@@ -180,10 +226,12 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check POI was verified
-      const poi = await l1Contract.read.getPOI([BigInt(0)]);
-      expect(poi[3]).to.equal(true); // verified
-      expect(poi[4]).to.equal(validator.address); // validator
-      expect(poi[9]).to.equal(BigInt(2)); // state = VerificationState.Verified
+      const poiResult = await l1Contract.read.getPOI([BigInt(0)]);
+      const poi = parsePOI(poiResult);
+      
+      expect(poi.verified).to.equal(true);
+      expect(poi.validator.toLowerCase()).to.equal(validator.address.toLowerCase());
+      expect(poi.state).to.equal(VerificationState.Verified);
       
       // Check validator received reward (30% of stake)
       const expectedReward = (stakeAmount * BigInt(30)) / BigInt(100);
@@ -215,9 +263,11 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check POI state changed to challenged
-      const poi = await l1Contract.read.getPOI([BigInt(0)]);
-      expect(poi[7]).to.equal(true); // challenged
-      expect(poi[9]).to.equal(BigInt(3)); // state = VerificationState.Challenged
+      const poiResult = await l1Contract.read.getPOI([BigInt(0)]);
+      const poi = parsePOI(poiResult);
+      
+      expect(poi.challenged).to.equal(true);
+      expect(poi.state).to.equal(VerificationState.Challenged);
     });
     
     it("should resolve a POI challenge (verify)", async function () {
@@ -251,9 +301,11 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check POI state returned to verified
-      const poi = await l1Contract.read.getPOI([BigInt(0)]);
-      expect(poi[7]).to.equal(false); // challenged = false
-      expect(poi[9]).to.equal(BigInt(2)); // state = VerificationState.Verified
+      const poiResult = await l1Contract.read.getPOI([BigInt(0)]);
+      const poi = parsePOI(poiResult);
+      
+      expect(poi.challenged).to.equal(false);
+      expect(poi.state).to.equal(VerificationState.Verified);
     });
     
     it("should resolve a POI challenge (reject)", async function () {
@@ -290,9 +342,11 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check POI state changed to rejected
-      const poi = await l1Contract.read.getPOI([BigInt(0)]);
-      expect(poi[3]).to.equal(false); // verified = false
-      expect(poi[9]).to.equal(BigInt(4)); // state = VerificationState.Rejected
+      const poiResult = await l1Contract.read.getPOI([BigInt(0)]);
+      const poi = parsePOI(poiResult);
+      
+      expect(poi.verified).to.equal(false);
+      expect(poi.state).to.equal(VerificationState.Rejected);
       
       // Check user received refund (minus validator reward)
       const validatorReward = (stakeAmount * BigInt(30)) / BigInt(100);
@@ -313,7 +367,7 @@ describe("POI Marketplace Contracts", function () {
       const minValidatorStake = await l2Contract.read.minValidatorStake();
       const totalValidators = await l2Contract.read.totalValidators();
       
-      expect(l1OriginContract).to.equal(l1ContractAddress);
+      expect(l1OriginContract.toLowerCase()).to.equal(l1ContractAddress.toLowerCase());
       expect(l1ChainId).to.equal(BigInt(31337));
       expect(auctionDuration).to.equal(BigInt(24 * 60 * 60)); // 1 day
       expect(minValidatorReputation).to.equal(BigInt(100));
@@ -332,11 +386,19 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check validator was registered
-      const validatorInfo = await l2Contract.read.validators([validator.address]);
-      expect(validatorInfo[0]).to.equal(true); // isRegistered
-      expect(validatorInfo[1]).to.equal(BigInt(0)); // totalVerified
-      expect(validatorInfo[2]).to.equal(BigInt(100)); // reputation
-      expect(validatorInfo[3]).to.equal(stakeAmount); // stakedAmount
+      const validatorInfoResult = await l2Contract.read.validators([validator.address]);
+      
+      const validatorInfo = {
+        isRegistered: validatorInfoResult[0],
+        totalVerified: validatorInfoResult[1],
+        reputation: validatorInfoResult[2],
+        stakedAmount: validatorInfoResult[3]
+      };
+      
+      expect(validatorInfo.isRegistered).to.equal(true);
+      expect(validatorInfo.totalVerified).to.equal(BigInt(0));
+      expect(validatorInfo.reputation).to.equal(BigInt(100));
+      expect(validatorInfo.stakedAmount).to.equal(stakeAmount);
       
       const totalValidators = await l2Contract.read.totalValidators();
       expect(totalValidators).to.equal(BigInt(1));
@@ -354,9 +416,17 @@ describe("POI Marketplace Contracts", function () {
       });
       
       // Check validator was registered with higher reputation
-      const validatorInfo = await l2Contract.read.validators([validator.address]);
-      expect(validatorInfo[0]).to.equal(true); // isRegistered
-      expect(validatorInfo[2]).to.equal(BigInt(200)); // reputation (higher because proof provided)
+      const validatorInfoResult = await l2Contract.read.validators([validator.address]);
+      
+      const validatorInfo = {
+        isRegistered: validatorInfoResult[0],
+        totalVerified: validatorInfoResult[1],
+        reputation: validatorInfoResult[2],
+        stakedAmount: validatorInfoResult[3]
+      };
+      
+      expect(validatorInfo.isRegistered).to.equal(true);
+      expect(validatorInfo.reputation).to.equal(BigInt(200)); // reputation (higher because proof provided)
     });
     
     it("should not allow registering with insufficient stake", async function () {
@@ -375,8 +445,16 @@ describe("POI Marketplace Contracts", function () {
       }
       
       // Check validator was not registered
-      const validatorInfo = await l2Contract.read.validators([validator.address]);
-      expect(validatorInfo[0]).to.equal(false); // isRegistered
+      const validatorInfoResult = await l2Contract.read.validators([validator.address]);
+      
+      const validatorInfo = {
+        isRegistered: validatorInfoResult[0],
+        totalVerified: validatorInfoResult[1],
+        reputation: validatorInfoResult[2],
+        stakedAmount: validatorInfoResult[3]
+      };
+      
+      expect(validatorInfo.isRegistered).to.equal(false);
       
       const totalValidators = await l2Contract.read.totalValidators();
       expect(totalValidators).to.equal(BigInt(0));

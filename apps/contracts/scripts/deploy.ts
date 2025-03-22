@@ -1,6 +1,75 @@
 import { createPublicClient, http, createWalletClient, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import hre from 'hardhat';
+import fs from 'fs';
+import path from 'path';
+
+// Contract addresses record management
+interface DeploymentRecord {
+  networks: {
+    [network: string]: {
+      contracts: {
+        [contract: string]: string;
+      };
+      deploymentTime: string;
+    };
+  };
+}
+
+// Path to the deployment records file
+const DEPLOYMENTS_DIR = path.join(__dirname, '../deployments');
+const DEPLOYMENTS_FILE = path.join(DEPLOYMENTS_DIR, 'contracts.json');
+
+// Function to load existing deployment records
+function loadDeploymentRecords(): DeploymentRecord {
+  if (!fs.existsSync(DEPLOYMENTS_DIR)) {
+    fs.mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
+  }
+  
+  if (!fs.existsSync(DEPLOYMENTS_FILE)) {
+    return { networks: {} };
+  }
+  
+  try {
+    const content = fs.readFileSync(DEPLOYMENTS_FILE, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.warn('Error reading deployments file, creating a new one');
+    return { networks: {} };
+  }
+}
+
+// Function to save deployment records
+function saveDeploymentRecords(records: DeploymentRecord) {
+  fs.writeFileSync(DEPLOYMENTS_FILE, JSON.stringify(records, null, 2));
+  console.log(`Deployment records saved to ${DEPLOYMENTS_FILE}`);
+}
+
+// Function to get contract address from deployment records
+function getContractAddress(network: string, contract: string): string | null {
+  const records = loadDeploymentRecords();
+  if (!records.networks[network] || !records.networks[network].contracts[contract]) {
+    return null;
+  }
+  return records.networks[network].contracts[contract];
+}
+
+// Function to save contract address to deployment records
+function saveContractAddress(network: string, contract: string, address: string) {
+  const records = loadDeploymentRecords();
+  
+  if (!records.networks[network]) {
+    records.networks[network] = {
+      contracts: {},
+      deploymentTime: new Date().toISOString()
+    };
+  }
+  
+  records.networks[network].contracts[contract] = address;
+  records.networks[network].deploymentTime = new Date().toISOString();
+  
+  saveDeploymentRecords(records);
+}
 
 async function main() {
   console.log('Deploying POI Marketplace contracts...');
@@ -55,12 +124,8 @@ async function deployL1Contracts(viem: any, deployer: any, publicClient: any) {
   const l1POIMarketplaceAddress = await l1POIMarketplace.waitForDeployment();
   console.log(`L1POIMarketplace deployed to: ${l1POIMarketplaceAddress}`);
   
-  // Save deployment info to file for future reference
-  const deploymentInfo = {
-    network: "sepolia",
-    l1Contract: l1POIMarketplaceAddress,
-    deploymentTime: new Date().toISOString()
-  };
+  // Save contract address to deployment records
+  saveContractAddress('sepolia', 'L1POIMarketplace', l1POIMarketplaceAddress);
   
   console.log("Waiting for block confirmations before verification...");
   // Wait for several block confirmations to ensure the contract is properly deployed
@@ -90,9 +155,11 @@ async function deployL1Contracts(viem: any, deployer: any, publicClient: any) {
     }
   }
   
-  // Instructions for updating with the actual L2 contract address
-  console.log('\nAfter deploying the L2 contract, update the L1 contract with:');
-  console.log(`L1POIMarketplace at ${l1POIMarketplaceAddress}.updateL2Contract(YOUR_L2_CONTRACT_ADDRESS)`);
+  console.log("\n------------------------------------------------------");
+  console.log("Next steps:");
+  console.log("1. Deploy the L2 contract on T1 using `bun run deploy:t1`");
+  console.log("2. Update the L1 contract with the L2 address using `bun run update:l1`");
+  console.log("------------------------------------------------------\n");
 }
 
 async function deployL2Contracts(viem: any, deployer: any, publicClient: any) {
@@ -101,12 +168,15 @@ async function deployL2Contracts(viem: any, deployer: any, publicClient: any) {
   // Set L1 chain ID for Sepolia
   const l1ChainId = 11155111;
   
-  // Get the L1 contract address (input from the user)
-  const l1ContractAddress = process.env.L1_CONTRACT_ADDRESS;
+  // Get the L1 contract address from deployment records
+  const l1ContractAddress = getContractAddress('sepolia', 'L1POIMarketplace');
   if (!l1ContractAddress) {
-    console.error('Please set L1_CONTRACT_ADDRESS in your environment variables');
+    console.error('L1POIMarketplace contract address not found in deployment records.');
+    console.error('Please deploy the L1 contract first on Sepolia.');
     process.exit(1);
   }
+  
+  console.log(`Using L1 contract address: ${l1ContractAddress}`);
   
   // Deploy L2POIAuction contract
   const L2POIAuctionFactory = await viem.getContractFactory('L2POIAuction');
@@ -120,13 +190,8 @@ async function deployL2Contracts(viem: any, deployer: any, publicClient: any) {
   const l2POIAuctionAddress = await l2POIAuction.waitForDeployment();
   console.log(`L2POIAuction deployed to: ${l2POIAuctionAddress}`);
   
-  // Save deployment info to file for future reference
-  const deploymentInfo = {
-    network: "t1",
-    l2Contract: l2POIAuctionAddress,
-    l1Contract: l1ContractAddress,
-    deploymentTime: new Date().toISOString()
-  };
+  // Save contract address to deployment records
+  saveContractAddress('t1', 'L2POIAuction', l2POIAuctionAddress);
   
   console.log("Waiting for block confirmations before verification...");
   // Wait for several block confirmations to ensure the contract is properly deployed
@@ -156,12 +221,14 @@ async function deployL2Contracts(viem: any, deployer: any, publicClient: any) {
     }
   }
   
-  // Instructions for updating the L1 contract with this L2 address
-  console.log('\nUpdate your L1 contract with this L2 address:');
-  console.log(`Call updateL2Contract(${l2POIAuctionAddress}) on your L1 contract at ${l1ContractAddress}`);
+  console.log("\n------------------------------------------------------");
+  console.log("Next steps:");
+  console.log("1. Update the L1 contract with the L2 address using `bun run update:l1`");
+  console.log("------------------------------------------------------\n");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
