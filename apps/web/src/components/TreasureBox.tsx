@@ -185,6 +185,12 @@ export function TreasureBox({
       // Get the provider from the wallet
       const provider = await embeddedWallet?.getEthereumProvider();
       
+      if (!provider) {
+        setError(t('treasureBox.errorNoProvider'));
+        setLoading(false);
+        return;
+      }
+      
       // Subscribe to the POI
       const result = await subscribeToPOI(
         provider, 

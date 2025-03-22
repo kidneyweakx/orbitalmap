@@ -401,18 +401,11 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             console.error("Error switching to Sepolia:", err);
           }
           
-          // Random price between 0.001 and 0.01 ETH for demo
-          const subscriptionPrice = (Math.random() * 0.009 + 0.001).toFixed(4);
-          
           // Register the POI with the selected spot data
           const result = await registerPOI(
             provider,
             selectedSpot.name,
-            selectedSpot.coordinates[1], // lat
-            selectedSpot.coordinates[0], // lng
-            "0.01", // stake amount
-            true, // requires subscription
-            subscriptionPrice
+            "0.0000000001"
           );
           
           if (result.success) {

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { POI, CONTRACTS, getAuctionData, bidOnPOI } from '../../utils/contractUtils';
+import { usePrivy } from '@privy-io/react-auth';
+import { POI, CONTRACTS, getAuctionData } from '../../utils/contractUtils';
 import { ContractFunctionButton } from './ContractFunctionButton';
 
-// T1 Network ID (Ex-Optimism)
-const T1_NETWORK_ID = 11155420;
+// T1 Network ID
+const T1_NETWORK_ID = 299792;
 
 // Local interface for auction data with bigint types
 interface AuctionData {
@@ -45,9 +45,7 @@ export function L2Card({
 }: L2CardProps) {
   const { t } = useTranslation();
   const { user } = usePrivy();
-  const { wallets } = useWallets();
   
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [auctionPOIs, setAuctionPOIs] = useState<POI[]>([]);
@@ -182,87 +180,6 @@ export function L2Card({
     setBidAmount(e.target.value);
   };
 
-  // Handle placing a bid
-  const handlePlaceBid = async () => {
-    if (!selectedPOI) return;
-    if (!user?.wallet?.address) {
-      setError(t('treasureBox.errorNoWallet'));
-      return;
-    }
-    
-    // Validate bid amount
-    try {
-      const bidValue = parseEther(bidAmount);
-      const currentBid = auctionData[selectedPOI.id]?.highestBid || BigInt(0);
-      
-      // For very small bids, require at least 0.0000001 ETH more
-      const minIncrease = currentBid < parseEther("0.0001")
-        ? parseEther("0.0000001") // 0.0000001 ETH minimum increase for small bids
-        : currentBid / BigInt(10); // 10% minimum increase for larger bids
-        
-      if (bidValue <= currentBid) {
-        setError(t('treasureBox.errorBidTooLow'));
-        return;
-      }
-      
-      if (bidValue < currentBid + minIncrease) {
-        setError(`${t('treasureBox.errorBidIncreaseTooSmall')} (min: ${formatEther(currentBid + minIncrease)} ETH)`);
-        return;
-      }
-    } catch (error) {
-      console.error("Invalid bid amount:", error);
-      setError(t('treasureBox.errorInvalidBid'));
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Get the embedded wallet
-      const wallet = wallets.find(wallet => wallet.walletClientType === 'privy');
-      
-      if (!wallet) {
-        setError(t('treasureBox.errorNoWallet'));
-        setLoading(false);
-        return;
-      }
-      
-      // Get the provider from the wallet
-      const provider = await wallet.getEthereumProvider();
-      
-      if (!provider) {
-        setError(t('treasureBox.errorNoProvider'));
-        setLoading(false);
-        return;
-      }
-      
-      // Place bid on the POI using bidOnPOI function
-      const result = await bidOnPOI(
-        provider, 
-        BigInt(selectedPOI.id), 
-        parseEther(bidAmount)
-      );
-
-      if (result.success) {
-        setSuccess(t('treasureBox.bidSuccess'));
-        // Refresh auction data
-        fetchAuctionData([selectedPOI]);
-        if (onBidSuccess) {
-          onBidSuccess();
-        }
-      } else {
-        setError(result.error || t('treasureBox.bidFailed'));
-      }
-    } catch (err) {
-      console.error('Error bidding on POI:', err);
-      setError(t('treasureBox.bidError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Render the card in toolbox mode with a demo bidding interface
   if (isToolboxMode) {
     return (
@@ -272,7 +189,7 @@ export function L2Card({
             ← {t('common.back')}
           </button>
           <h3 className="demo-title">{t('treasureBox.l2CardTitle')}</h3>
-          <div className="network-badge">T1 (Ex-Optimism)</div>
+          <div className="network-badge">T1 Protocol</div>
         </div>
         
         <div className="card-description">
@@ -452,23 +369,29 @@ export function L2Card({
                   <input
                     id="bidAmount"
                     type="number"
-                    step="0.001"
+                    step="0.0000001"
                     min="0"
                     value={bidAmount}
                     onChange={handleBidAmountChange}
-                    disabled={loading}
                   />
                   <span className="currency">ETH</span>
                 </div>
               </div>
               
-              <button 
-                className="bid-button" 
-                onClick={handlePlaceBid}
-                disabled={loading || !bidAmount}
-              >
-                {loading ? t('treasureBox.placingBid') : t('treasureBox.placeBid')}
-              </button>
+              <ContractFunctionButton 
+                contractFunction="bidOnPOI"
+                functionArgs={[selectedPOI.id, bidAmount]} 
+                buttonText={t('treasureBox.placeBid')}
+                networkId={T1_NETWORK_ID}
+                onSuccess={() => {
+                  setSuccess(t('treasureBox.bidSuccess'));
+                  fetchAuctionData([selectedPOI]);
+                  if (onBidSuccess) {
+                    onBidSuccess();
+                  }
+                }}
+                onError={(error: unknown) => setError(typeof error === 'string' ? error : t('treasureBox.bidFailed'))}
+              />
             </div>
           )}
           

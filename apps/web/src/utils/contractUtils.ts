@@ -76,7 +76,7 @@ export const SAMPLE_POIS: POI[] = [
 ];
 
 // Simplified POI ABI for both L1 and L2
-const POI_ABI = [
+const L1_POI_ABI = [
   {
     "inputs": [
       {
@@ -94,27 +94,12 @@ const POI_ABI = [
     "inputs": [
       {
         "internalType": "string",
-        "name": "_name",
+        "name": "name",
         "type": "string"
       },
       {
-        "internalType": "int256",
-        "name": "_lat",
-        "type": "int256"
-      },
-      {
-        "internalType": "int256",
-        "name": "_lng",
-        "type": "int256"
-      },
-      {
-        "internalType": "bool",
-        "name": "_isSubscriptionRequired",
-        "type": "bool"
-      },
-      {
         "internalType": "uint256",
-        "name": "_subscriptionPrice",
+        "name": "stakeAmount",
         "type": "uint256"
       }
     ],
@@ -142,19 +127,6 @@ const POI_ABI = [
         "internalType": "uint256",
         "name": "_poiId",
         "type": "uint256"
-      }
-    ],
-    "name": "bidOnPOI",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_poiId",
-        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -172,12 +144,33 @@ const POI_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  }
+];
+
+const L2_POI_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poiId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bidAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "placeBid",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_poiId",
+        "name": "poiId",
         "type": "uint256"
       }
     ],
@@ -219,17 +212,32 @@ const handleContractError = (error: unknown) => {
   };
 };
 
+// For the EthereumProvider type
+type EthereumProvider = {
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  [key: string]: any;
+};
+
+// Gas parameters interface to match viem's expected types
+export interface GasParameters {
+  gas?: bigint;
+  maxFeePerGas?: bigint;
+  maxPriorityFeePerGas?: bigint;
+}
+
 /**
  * Subscribe to a premium POI on L1 (Sepolia)
  * @param walletProvider The Ethereum provider from Privy wallet
  * @param poiId The ID of the POI to subscribe to
  * @param price The subscription price in ETH
+ * @param gasParams Optional gas parameters for the transaction
  * @returns Result object with success status and transaction hash or error
  */
 export async function subscribeToPOI(
-  walletProvider: any,
+  walletProvider: EthereumProvider,
   poiId: string | bigint,
-  price: string | bigint
+  price: string | bigint,
+  gasParams?: GasParameters
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
   try {
     // Check if wallet provider exists
@@ -258,14 +266,15 @@ export async function subscribeToPOI(
       // Get the user's address
       const [userAddress] = await walletClient.getAddresses();
       
-      // Send the transaction
+      // Send the transaction with optional gas parameters
       const txHash = await walletClient.writeContract({
         account: userAddress,
         address: CONTRACTS.L1.address,
-        abi: POI_ABI,
+        abi: L1_POI_ABI,
         functionName: 'subscribeToPOI',
         args: [poiIdValue],
-        value: priceValue
+        value: priceValue,
+        ...(gasParams || {})
       });
 
       console.log('Subscription transaction sent:', txHash);
@@ -295,21 +304,15 @@ export async function subscribeToPOI(
  * Register a new POI on L1 (Sepolia)
  * @param walletProvider The Ethereum provider from Privy wallet
  * @param name The name of the POI
- * @param lat Latitude of the POI
- * @param lng Longitude of the POI
  * @param stakeAmount The stake amount in ETH
- * @param requiresSubscription Whether the POI requires a subscription
- * @param subscriptionPrice The subscription price in ETH
+ * @param gasParams Optional gas parameters for the transaction
  * @returns Result object with success status and transaction hash or error
  */
 export async function registerPOI(
-  walletProvider: any,
+  walletProvider: EthereumProvider,
   name: string,
-  lat: number,
-  lng: number,
   stakeAmount: string,
-  requiresSubscription: boolean,
-  subscriptionPrice: string
+  gasParams?: GasParameters
 ): Promise<{ success: boolean; poiId?: string; txHash?: string; error?: string }> {
   try {
     // Check if wallet provider exists
@@ -319,16 +322,11 @@ export async function registerPOI(
         error: 'No wallet provider found. Please connect your wallet.',
       };
     }
-
-    // Convert lat/lng to fixed-point integers for contract
-    const latFixed = Math.floor(lat * 1e6);
-    const lngFixed = Math.floor(lng * 1e6);
     
-    // Convert stake amount and subscription price to bigint
+    // Convert stake amount to bigint
     const stakeValue = parseEther(stakeAmount);
-    const subscriptionValue = parseEther(subscriptionPrice);
 
-    console.log(`Registering POI ${name} at (${lat}, ${lng}) with stake ${stakeAmount} ETH`);
+    console.log(`Registering POI ${name} with stake ${stakeAmount} ETH`);
 
     try {
       // Create wallet client from the provider
@@ -340,20 +338,18 @@ export async function registerPOI(
       // Get the user's address
       const [userAddress] = await walletClient.getAddresses();
       
-      // Send the transaction
+      // Send the transaction with optional gas parameters
       const txHash = await walletClient.writeContract({
         account: userAddress,
         address: CONTRACTS.L1.address,
-        abi: POI_ABI,
+        abi: L1_POI_ABI,
         functionName: 'registerPOI',
         args: [
           name,
-          BigInt(latFixed),
-          BigInt(lngFixed),
-          requiresSubscription,
-          subscriptionValue
+          stakeValue
         ],
-        value: stakeValue
+        value: stakeValue, // Value is the stake amount
+        ...(gasParams || {})
       });
 
       console.log('Registration transaction sent:', txHash);
@@ -425,7 +421,7 @@ export async function challengePOI(
       const txHash = await walletClient.writeContract({
         account: userAddress,
         address: CONTRACTS.L1.address,
-        abi: POI_ABI,
+        abi: L1_POI_ABI,
         functionName: 'challengePOI',
         args: [poiIdValue],
         value: stakeValue
@@ -478,7 +474,7 @@ export async function isUserSubscribedToPOI(
       // Call the contract to check subscription status
       const isSubscribed = await publicClient.readContract({
         address: CONTRACTS.L1.address,
-        abi: POI_ABI,
+        abi: L1_POI_ABI,
         functionName: 'isSubscribed',
         args: [poiIdValue, userAddress as `0x${string}`]
       });
@@ -535,7 +531,7 @@ export async function getAuctionData(
       // Call the contract to get auction info
       const auctionInfo = await publicClient.readContract({
         address: CONTRACTS.L2.address,
-        abi: POI_ABI,
+        abi: L2_POI_ABI,
         functionName: 'getAuctionInfo',
         args: [poiIdValue]
       }) as [bigint, string, bigint, boolean];
@@ -593,12 +589,14 @@ export async function getAuctionData(
  * @param walletProvider The Ethereum provider from Privy wallet
  * @param poiId The ID of the POI to bid on
  * @param bidAmount The bid amount in ETH
+ * @param gasParams Optional gas parameters for the transaction
  * @returns Result object with success status and transaction hash or error
  */
 export async function bidOnPOI(
-  walletProvider: any,
+  walletProvider: EthereumProvider,
   poiId: string | bigint,
-  bidAmount: string | bigint
+  bidAmount: string | bigint,
+  gasParams?: GasParameters
 ): Promise<{success: boolean, txHash?: string, error?: string}> {
   try {
     // Check if wallet provider exists
@@ -618,34 +616,44 @@ export async function bidOnPOI(
     console.log(`Bidding on POI ${poiId} with ${formatEther(bidValue)} ETH...`);
 
     try {
-      // Create wallet client for L2 
+      // Get T1 chain configuration
+      const t1Chain = {
+        id: CONTRACTS.L2.chainId,
+        name: "T1",
+        nativeCurrency: {
+          decimals: 18,
+          name: "T1 Ether",
+          symbol: "ETH",
+        },
+        rpcUrls: {
+          default: { http: ["https://rpc.v006.t1protocol.com"] },
+        },
+      };
+      
+      // Create wallet client from the provider
       const walletClient = createWalletClient({
         transport: custom(walletProvider),
-        chain: {
-          id: CONTRACTS.L2.chainId,
-          name: "T1",
-          nativeCurrency: {
-            decimals: 18,
-            name: "T1 Ether",
-            symbol: "ETH",
-          },
-          rpcUrls: {
-            default: { http: ["https://rpc.v006.t1protocol.com"] },
-          },
-        }
+        chain: t1Chain
       });
       
       // Get the user's address
       const [userAddress] = await walletClient.getAddresses();
       
-      // Send the transaction
+      // For T1 network, only use gas limit without EIP-1559 params
+      const simplifiedGasParams = {
+        gas: gasParams?.gas || BigInt(100000), // Use provided gas or default to 100,000
+      };
+      
+      console.log('Using gas params for T1:', simplifiedGasParams);
+      
+      // Send the transaction with simplified gas parameters
       const txHash = await walletClient.writeContract({
         account: userAddress,
         address: CONTRACTS.L2.address,
-        abi: POI_ABI,
-        functionName: 'bidOnPOI',
-        args: [poiIdValue],
-        value: bidValue
+        abi: L2_POI_ABI,
+        functionName: 'placeBid',
+        args: [poiIdValue, bidValue],
+        ...simplifiedGasParams
       });
 
       console.log('Bid transaction sent:', txHash);
@@ -659,7 +667,7 @@ export async function bidOnPOI(
       
       // For now, fallback to mock implementation for demo
       console.log('Using fallback mock implementation...');
-      await new Promise(resolve => setTimeout(resolve, 1300));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       return {
         success: true,
@@ -667,11 +675,7 @@ export async function bidOnPOI(
       };
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to place bid';
-    return {
-      success: false,
-      error: errorMessage
-    };
+    return handleContractError(error);
   }
 }
 

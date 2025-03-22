@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { subscribeToPOI, registerPOI, bidOnPOI } from '../../utils/contractUtils';
+import { subscribeToPOI, registerPOI, bidOnPOI, GasParameters } from '../../utils/contractUtils';
+import { parseEther } from 'viem';
 
 // 定义不同合约函数的参数类型
 type SubscribeToPOIArgs = [string | bigint, string | bigint]; // poiId, price
-type RegisterPOIArgs = [string, number, number, string, boolean, string]; // name, lat, lng, stakeAmount, requiresSubscription, subscriptionPrice
+type RegisterPOIArgs = [string, string]; // name, stakeAmount
 type BidOnPOIArgs = [string | bigint, string | bigint]; // poiId, bidAmount
 
 // 映射合约函数到其参数类型
@@ -38,6 +39,20 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
   const { authenticated, login, createWallet } = usePrivy();
   const { wallets } = useWallets();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Add manual gas limit for different contract functions
+  const getGasLimit = (functionName: string): bigint => {
+    switch (functionName) {
+      case 'subscribeToPOI':
+        return BigInt(300000); // 300,000 gas
+      case 'registerPOI':
+        return BigInt(500000); // 500,000 gas
+      case 'bidOnPOI':
+        return BigInt(100000); // Reduced from 250,000 to 100,000 gas
+      default:
+        return BigInt(100000); // Default 100,000 gas
+    }
+  };
 
   const handleContractCall = async () => {
     try {
@@ -89,12 +104,40 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
         throw new Error("No provider available. Please try again.");
       }
       
+      // Set gas limit based on function
+      const gasLimit = getGasLimit(contractFunction);
+      
+      // Get fee data from the network if possible
+      let maxFeePerGas: bigint | undefined;
+      let maxPriorityFeePerGas: bigint | undefined;
+      
+      try {
+        // Use much lower gas fees for testing networks
+        maxFeePerGas = parseEther('0.0000000003'); // 0.3 gwei base
+        maxPriorityFeePerGas = parseEther('0.0000000001'); // 0.1 gwei priority
+      } catch {
+        // Ignore errors, use the defaults from initialization
+        console.warn('Error getting fee data, using defaults');
+      }
+      
+      // Prepare gas parameters - for T1 network, don't use maxFeePerGas and maxPriorityFeePerGas
+      const gasParams: GasParameters = {
+        gas: gasLimit,
+      };
+      
+      // Only add EIP-1559 params for networks that support it (not for T1)
+      if (networkId !== 299792) { // If not T1 network
+        gasParams.maxFeePerGas = maxFeePerGas;
+        gasParams.maxPriorityFeePerGas = maxPriorityFeePerGas;
+      }
+      
+      console.log(`Using gas params:`, gasParams);
+      
       let result;
       
       // Call the appropriate contract function
       console.log(`Calling contract function: ${contractFunction} with args:`, functionArgs);
       
-      // 为registerPOI预先处理参数
       const registerArgs = functionArgs as RegisterPOIArgs;
       
       switch (contractFunction) {
@@ -102,25 +145,24 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
           result = await subscribeToPOI(
             provider, 
             (functionArgs as SubscribeToPOIArgs)[0], 
-            (functionArgs as SubscribeToPOIArgs)[1]
+            (functionArgs as SubscribeToPOIArgs)[1],
+            gasParams
           );
           break;
         case 'registerPOI':
           result = await registerPOI(
             provider, 
             registerArgs[0], // name
-            registerArgs[1], // lat
-            registerArgs[2], // lng
-            registerArgs[3], // stakeAmount
-            registerArgs[4], // requiresSubscription
-            registerArgs[5]  // subscriptionPrice
+            registerArgs[1], // stakeAmount
+            gasParams
           );
           break;
         case 'bidOnPOI':
           result = await bidOnPOI(
             provider, 
             (functionArgs as BidOnPOIArgs)[0], 
-            (functionArgs as BidOnPOIArgs)[1]
+            (functionArgs as BidOnPOIArgs)[1],
+            gasParams
           );
           break;
         default:
@@ -150,6 +192,8 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
           userError = new Error("Transaction was rejected. Please try again when ready.");
         } else if (errorMessage.includes("insufficient funds")) {
           userError = new Error("Your wallet has insufficient funds for this transaction.");
+        } else if (errorMessage.includes("intrinsic gas too low")) {
+          userError = new Error("Network is congested. Please try again with a higher gas limit.");
         } else if (errorMessage.includes("Failed to switch")) {
           userError = error as Error;
         } else {

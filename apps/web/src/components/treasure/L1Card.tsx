@@ -203,11 +203,7 @@ export function L1Card({
                 contractFunction="registerPOI"
                 functionArgs={[
                   "My Custom POI", // name
-                  35.6812, // lat
-                  139.7671, // lng
-                  "0.000003", // stakeAmount
-                  true, // requiresSubscription
-                  "0.000001" // subscriptionPrice
+                  "0.000003" // stakeAmount
                 ]}
                 buttonText="Register POI"
                 networkId={SEPOLIA_NETWORK_ID}
