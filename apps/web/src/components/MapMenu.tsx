@@ -5,6 +5,8 @@ import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator'
 import { ThemeMode } from '../App';
 import { ZKLocationProofCard } from './ZKLocationProofCard';
 import { encryptLocationData } from '../utils/privacyUtils'; // Import encryption utility
+import { TreasureBox } from './treasure/TreasureBox'; // Import TreasureBox component
+import { POI, getPOIsInArea } from '../utils/contractUtils'; // Import POI and getPOIsInArea
 
 interface Spot {
   id: string;
@@ -44,7 +46,6 @@ interface MapMenuProps {
 
 export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards, setRewards, theme, onShowAnalytics, onTogglePrivacyHeatmap }: MapMenuProps) {
   const { t, i18n } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState('');
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [isAddingSpot, setIsAddingSpot] = useState(false);
@@ -61,12 +62,25 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [showZKProofCard, setShowZKProofCard] = useState(false);
-  const [privacyMode, setPrivacyMode] = useState(true); // Default to privacy mode on
+  // Keep privacyMode for compatibility with spot encryption features
+  const [privacyMode] = useState(true); // Default to privacy mode on
   // Keep state variable for when heatmap functionality is restored
   const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false);
   const [showHeatmapTooltip, setShowHeatmapTooltip] = useState(false);
-  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
-  const [encryptedCoordinateId, setEncryptedCoordinateId] = useState<string>("");
+  
+  // Add the active tab state
+  const [activeTab, setActiveTab] = useState<'spots' | 'rewards' | 'treasure'>('spots');
+  
+  // TreasureBox related states
+  const [showTreasureBox, setShowTreasureBox] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<{
+    name: string;
+    coordinates: [number, number];
+    radius: number;
+  } | undefined>(undefined);
+  
+  // Add POIs state for TreasureBox
+  const [poisInArea, setPoisInArea] = useState<POI[]>([]);
   
   // Effect to handle map clicks
   useEffect(() => {
@@ -249,27 +263,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     return rewards.filter(reward => reward.linkedSpotId === spotId).length;
   };
 
-  const handleSearch = async () => {
-    if (!map || !searchQuery) return;
-
-    try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${mapboxgl.accessToken}`
-      );
-      const data = await response.json();
-
-      if (data.features && data.features.length > 0) {
-        const [lng, lat] = data.features[0].center;
-        map.flyTo({
-          center: [lng, lat],
-          zoom: 12
-        });
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-    }
-  };
-
   const handleAddSpot = async () => {
     if (!map || !newSpotName) return;
 
@@ -373,45 +366,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     setRewards(rewards.filter(reward => reward.linkedSpotId !== id));
   };
 
-  const handleGetCurrentLocation = () => {
-    if (!map) return;
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
-          
-          map.flyTo({
-            center: userLocation,
-            zoom: 14
-          });
-          
-          if (isAddingSpot) {
-            // Clear previous temp marker if exists
-            if (tempMarkerRef.current) {
-              tempMarkerRef.current.remove();
-              tempMarkerRef.current = null;
-            }
-            
-            // Create a temporary marker at the user location
-            tempMarkerRef.current = new mapboxgl.Marker({ color: '#ff0000' })
-              .setLngLat(userLocation)
-              .addTo(map);
-            
-            // Set position for new spot
-            setAddSpotPosition(userLocation);
-          }
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          alert(t('mapMenu.locationError'));
-        }
-      );
-    } else {
-      alert(t('mapMenu.geolocationNotSupported'));
-    }
-  };
-
   const handleCollectReward = (rewardId: string) => {
     setRewards(prevRewards => prevRewards.map(reward => 
       reward.id === rewardId ? { ...reward, isVisible: false } : reward
@@ -424,11 +378,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const handleTagToggle = (tag: string) => {
     // For browsing, filter the spots by tag
     setActiveTag(activeTag === tag ? null : tag);
-  };
-  
-  // Toggle privacy mode for location encryption
-  const handleTogglePrivacyMode = () => {
-    setPrivacyMode(!privacyMode);
   };
   
   // Get filtered spots based on active tag
@@ -471,252 +420,294 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
-  // 更新当前位置的加密ID
-  useEffect(() => {
-    if (coordinates && privacyMode) {
-      const updateEncryptedId = async () => {
-        try {
-          const encId = await encryptLocationData(
-            coordinates[1],
-            coordinates[0],
-            "loc-id"
-          );
-          setEncryptedCoordinateId(encId.substring(0, 10) + "...");
-        } catch (error) {
-          console.error("Failed to encrypt coordinates:", error);
-          setEncryptedCoordinateId("[加密错误]");
-        }
-      };
+  // Handle selecting an area for treasure hunting
+  const handleSelectAreaForTreasure = () => {
+    if (!coordinates) return;
+    
+    // Create a selected area with current map center
+    const area = {
+      name: `Area ${new Date().toLocaleTimeString()}`,
+      coordinates: coordinates,
+      radius: 1 // 1km radius
+    };
+    
+    setSelectedArea(area);
+    
+    // Fetch POIs in the selected area
+    fetchPOIsInArea(area.coordinates, area.radius);
+    
+    // Show the treasure box
+    setShowTreasureBox(true);
+  };
+  
+  // Function to fetch POIs in the selected area
+  const fetchPOIsInArea = async (coordinates: [number, number], radius: number) => {
+    try {
+      // Calculate min/max coordinates for the bounding box
+      const minLat = coordinates[1] - radius * 0.008; // ~1km ≈ 0.008 degrees of latitude
+      const maxLat = coordinates[1] + radius * 0.008;
+      const minLng = coordinates[0] - radius * 0.011; // ~1km at equator ≈ 0.011 degrees of longitude
+      const maxLng = coordinates[0] + radius * 0.011;
       
-      updateEncryptedId();
+      // Fetch POIs from contract utils
+      const pois = await getPOIsInArea(minLat, maxLat, minLng, maxLng);
+      setPoisInArea(pois);
+    } catch (error) {
+      console.error('Error fetching POIs:', error);
+      setPoisInArea([]);
     }
-  }, [coordinates, privacyMode]);
+  };
+  
+  // Handle subscription success
+  const handleSubscriptionSuccess = () => {
+    // Maybe update some state or show notification
+    console.log('Subscription successful');
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab: 'spots' | 'rewards' | 'treasure') => {
+    setActiveTab(tab);
+  };
 
   return (
     <>
       <div className={`map-menu ${theme === 'dark' ? 'dark-theme' : ''} ${isMenuCollapsed ? 'collapsed' : ''}`}>
+        <div className="menu-header">
+          <h2>{t('mapMenu.title')}</h2>
+          <button className="toggle-menu" onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}>
+            {isMenuCollapsed ? '↓' : '↑'}
+          </button>
+        </div>
+        
         <div className="menu-content">
-          <div className="search-section">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('mapMenu.searchPlaceholder')}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button onClick={handleSearch}>{t('mapMenu.searchButton')}</button>
-          </div>
-
-          <div className="location-controls">
-            <button className="current-location-btn" onClick={handleGetCurrentLocation}>
-              {t('mapMenu.getCurrentLocation')}
+          <div className="menu-tabs">
+            <button 
+              className={activeTab === 'spots' ? 'active' : ''} 
+              onClick={() => handleTabChange('spots')}
+            >
+              {t('mapMenu.spotsTab')}
             </button>
-            <p className="coordinates-display">
-              {t('mapMenu.coordinates')}: {coordinates && privacyMode ? 
-                `${t('privacy.teeId')}: ${encryptedCoordinateId}` : 
-                coordinates ? `${coordinates[0]}, ${coordinates[1]}` : "..."}
-            </p>
-            <div className="privacy-toggle"
-                 onMouseEnter={() => setShowPrivacyTooltip(true)}
-                 onMouseLeave={() => setShowPrivacyTooltip(false)}>
-              <label className="switch">
-                <input 
-                  type="checkbox" 
-                  checked={privacyMode} 
-                  onChange={handleTogglePrivacyMode}
-                />
-                <span className="slider round"></span>
-              </label>
-              <span className="privacy-label">
-                {privacyMode ? (
-                  <span><span className="lock-icon">🔒</span> {t('privacy.enabled')}</span>
-                ) : (
-                  <span><span className="unlock-icon">🔓</span> {t('privacy.disabled')}</span>
-                )}
-              </span>
-              
-              {showPrivacyTooltip && privacyMode && (
-                <div className="privacy-tooltip">
-                  <p>{t('privacy.locationEncryptionNotice')}</p>
-                </div>
-              )}
-            </div>
+            <button 
+              className={activeTab === 'rewards' ? 'active' : ''} 
+              onClick={() => handleTabChange('rewards')}
+            >
+              {t('mapMenu.rewardsTab')}
+            </button>
+            <button 
+              className={activeTab === 'treasure' ? 'active' : ''} 
+              onClick={() => handleTabChange('treasure')}
+            >
+              {t('treasureBox.title')}
+            </button>
           </div>
           
-          <div className="rewards-info-section">
-            <h3>{t('mapMenu.rewardsInfo')}</h3>
-            <p>{t('mapMenu.rewardsExplanation')}</p>
-            <div className="reward-types">
-              <div className="reward-type">
-                <span className="reward-emoji">🔥</span> {t('mapMenu.highValueReward')}
+          {/* Existing content for spots tab */}
+          {activeTab === 'spots' && (
+            <div className="spots-section">
+              <div className="spots-header">
+                <h3>{t('mapMenu.privateSpots')}</h3>
+                <button onClick={() => !isAddingSpot && setIsAddingSpot(true)}>{t('mapMenu.addSpot')}</button>
               </div>
-              <div className="reward-type">
-                <span className="reward-emoji">⭐️</span> {t('mapMenu.mediumValueReward')}
-              </div>
-              <div className="reward-type">
-                <span className="reward-emoji">🍀</span> {t('mapMenu.lowValueReward')}
-              </div>
-            </div>
-            
-            {onTogglePrivacyHeatmap && (
-              <div className="privacy-heatmap-card" 
-                   onMouseEnter={() => setShowHeatmapTooltip(true)}
-                   onMouseLeave={() => setShowHeatmapTooltip(false)}>
+
+              {/* Tags for filtering */}
+              <div className="tags-filter">
                 <button 
-                  className={`heatmap-toggle-btn ${showPrivacyHeatmap ? 'active' : ''}`}
-                  onClick={handleToggleHeatmap}
+                  key="all" 
+                  className={`tag-filter-btn ${activeTag === null ? 'active' : ''}`}
+                  onClick={() => setActiveTag(null)}
                 >
-                  <span className="heatmap-icon">🔒</span>
-                  {showPrivacyHeatmap ? t('privacy.hideHeatmap') : t('privacy.showHeatmap')}
+                  {t('tags.all')}
                 </button>
-                
-                {showHeatmapTooltip && (
-                  <div className="privacy-tooltip">
+                {SPOT_TAGS.map(tag => (
+                  <button 
+                    key={tag} 
+                    className={`tag-filter-btn ${activeTag === tag ? 'active' : ''}`}
+                    onClick={() => handleTagToggle(tag)}
+                  >
+                    {t(`tags.${tag}`)}
+                  </button>
+                ))}
+              </div>
+
+              {isAddingSpot && (
+                <div className="add-spot-form">
+                  <input
+                    type="text"
+                    value={newSpotName}
+                    onChange={(e) => setNewSpotName(e.target.value)}
+                    placeholder={t('mapMenu.spotNamePlaceholder')}
+                  />
+                  <textarea
+                    value={newSpotDescription}
+                    onChange={(e) => setNewSpotDescription(e.target.value)}
+                    placeholder={t('mapMenu.spotDescriptionPlaceholder')}
+                  />
+                  
+                  {/* Emoji selection */}
+                  <div className="emoji-selection">
+                    <label>{t('mapMenu.selectEmoji')}:</label>
+                    <div className="emoji-options">
+                      {SPOT_EMOJIS.map(emoji => (
+                        <button 
+                          key={emoji} 
+                          type="button"
+                          className={`emoji-btn ${newSpotEmoji === emoji ? 'selected' : ''}`}
+                          onClick={() => setNewSpotEmoji(emoji)}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="selected-coordinates">
                     <p>
-                      <span className="privacy-icon">🔒</span>
-                      This heatmap shows areas of activity without revealing individual GPS data. All analytics are computed within the TEE.
+                      {t('mapMenu.selectedLocation')}: 
+                      {addSpotPosition ? (
+                        privacyMode ? 
+                          ` ${t('privacy.encryptedCoordinates')}` : 
+                          ` ${addSpotPosition[0].toFixed(6)}, ${addSpotPosition[1].toFixed(6)}`
+                      ) : (
+                        t('mapMenu.noLocationSelected')
+                      )}
                     </p>
                   </div>
+                  
+                  <div className="add-spot-buttons">
+                    <button onClick={handleAddSpot} disabled={!newSpotName}>{t('mapMenu.saveSpot')}</button>
+                    <button onClick={handleCancelAddSpot}>{t('mapMenu.cancel')}</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="spot-cards">
+                {filteredSpots.length === 0 ? (
+                  <p className="no-spots">{activeTag ? t('mapMenu.noSpotsWithTag') : t('mapMenu.noSpots')}</p>
+                ) : (
+                  filteredSpots.map(spot => (
+                    <div key={spot.id} className={`spot-card ${spot.isEncrypted ? 'encrypted-spot' : ''}`}>
+                      <div className="spot-emoji">
+                        <span className="emoji-display">{spot.emoji}</span>
+                        {spot.isEncrypted && (
+                          <div className="encrypted-badge">
+                            <span className="encrypted-icon">🔒</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="spot-content">
+                        <h4>{spot.name}</h4>
+                        <div className="spot-tags">
+                          {spot.tags.map(tag => (
+                            <span key={tag} className="tag-badge">{t(`tags.${tag}`)}</span>
+                          ))}
+                        </div>
+                        <p>{spot.description || t('mapMenu.noDescription')}</p>
+                        
+                        {/* Show encrypted ID or coordinates based on privacy mode */}
+                        {spot.isEncrypted ? (
+                          <div className="encrypted-location-info">
+                            <p className="tee-id">
+                              <span className="tee-id-label">{t('privacy.teeId')}:</span> 
+                              <span className="tee-id-value">{spot.encryptedId?.substring(0, 8)}...{spot.encryptedId?.substring(spot.encryptedId?.length - 6)}</span>
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="coordinates-info">
+                            {t('privacy.coordinates')}: {spot.coordinates[1].toFixed(6)}, {spot.coordinates[0].toFixed(6)}
+                          </p>
+                        )}
+                        
+                        <p className="spot-rewards-count">
+                          {t('mapMenu.rewardsNearby')}: {countRewardsForSpot(spot.id)}
+                        </p>
+                        <div className="spot-actions">
+                          <button onClick={() => handleSpotClick(spot.coordinates)}>{t('mapMenu.viewOnMap')}</button>
+                          {onShowAnalytics && (
+                            <button 
+                              onClick={() => onShowAnalytics({ name: spot.name, coordinates: spot.coordinates })}
+                              className="analytics-btn"
+                            >
+                              {t('mapMenu.viewAnalytics')}
+                            </button>
+                          )}
+                          <button onClick={() => handleDeleteSpot(spot.id)} className="delete-btn">{t('mapMenu.delete')}</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
-            )}
-          </div>
-
-          <div className="spots-section">
-            <div className="spots-header">
-              <h3>{t('mapMenu.privateSpots')}</h3>
-              <button onClick={() => !isAddingSpot && setIsAddingSpot(true)}>{t('mapMenu.addSpot')}</button>
             </div>
-
-            {/* Tags for filtering */}
-            <div className="tags-filter">
-              <button 
-                key="all" 
-                className={`tag-filter-btn ${activeTag === null ? 'active' : ''}`}
-                onClick={() => setActiveTag(null)}
-              >
-                {t('tags.all')}
-              </button>
-              {SPOT_TAGS.map(tag => (
-                <button 
-                  key={tag} 
-                  className={`tag-filter-btn ${activeTag === tag ? 'active' : ''}`}
-                  onClick={() => handleTagToggle(tag)}
-                >
-                  {t(`tags.${tag}`)}
-                </button>
-              ))}
-            </div>
-
-            {isAddingSpot && (
-              <div className="add-spot-form">
-                <input
-                  type="text"
-                  value={newSpotName}
-                  onChange={(e) => setNewSpotName(e.target.value)}
-                  placeholder={t('mapMenu.spotNamePlaceholder')}
-                />
-                <textarea
-                  value={newSpotDescription}
-                  onChange={(e) => setNewSpotDescription(e.target.value)}
-                  placeholder={t('mapMenu.spotDescriptionPlaceholder')}
-                />
-                
-                {/* Emoji selection */}
-                <div className="emoji-selection">
-                  <label>{t('mapMenu.selectEmoji')}:</label>
-                  <div className="emoji-options">
-                    {SPOT_EMOJIS.map(emoji => (
-                      <button 
-                        key={emoji} 
-                        type="button"
-                        className={`emoji-btn ${newSpotEmoji === emoji ? 'selected' : ''}`}
-                        onClick={() => setNewSpotEmoji(emoji)}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+          )}
+          
+          {/* Existing content for rewards tab */}
+          {activeTab === 'rewards' && (
+            <div className="rewards-info-section">
+              <h3>{t('mapMenu.rewardsInfo')}</h3>
+              <p>{t('mapMenu.rewardsExplanation')}</p>
+              <div className="reward-types">
+                <div className="reward-type">
+                  <span className="reward-emoji">��</span> {t('mapMenu.highValueReward')}
                 </div>
-                
-                <div className="selected-coordinates">
-                  <p>
-                    {t('mapMenu.selectedLocation')}: 
-                    {addSpotPosition ? (
-                      privacyMode ? 
-                        ` ${t('privacy.encryptedCoordinates')}` : 
-                        ` ${addSpotPosition[0].toFixed(6)}, ${addSpotPosition[1].toFixed(6)}`
-                    ) : (
-                      t('mapMenu.noLocationSelected')
-                    )}
-                  </p>
+                <div className="reward-type">
+                  <span className="reward-emoji">⭐️</span> {t('mapMenu.mediumValueReward')}
                 </div>
-                
-                <div className="add-spot-buttons">
-                  <button onClick={handleAddSpot} disabled={!newSpotName}>{t('mapMenu.saveSpot')}</button>
-                  <button onClick={handleCancelAddSpot}>{t('mapMenu.cancel')}</button>
+                <div className="reward-type">
+                  <span className="reward-emoji">🍀</span> {t('mapMenu.lowValueReward')}
                 </div>
               </div>
-            )}
-
-            <div className="spot-cards">
-              {filteredSpots.length === 0 ? (
-                <p className="no-spots">{activeTag ? t('mapMenu.noSpotsWithTag') : t('mapMenu.noSpots')}</p>
-              ) : (
-                filteredSpots.map(spot => (
-                  <div key={spot.id} className={`spot-card ${spot.isEncrypted ? 'encrypted-spot' : ''}`}>
-                    <div className="spot-emoji">
-                      <span className="emoji-display">{spot.emoji}</span>
-                      {spot.isEncrypted && (
-                        <div className="encrypted-badge">
-                          <span className="encrypted-icon">🔒</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="spot-content">
-                      <h4>{spot.name}</h4>
-                      <div className="spot-tags">
-                        {spot.tags.map(tag => (
-                          <span key={tag} className="tag-badge">{t(`tags.${tag}`)}</span>
-                        ))}
-                      </div>
-                      <p>{spot.description || t('mapMenu.noDescription')}</p>
-                      
-                      {/* Show encrypted ID or coordinates based on privacy mode */}
-                      {spot.isEncrypted ? (
-                        <div className="encrypted-location-info">
-                          <p className="tee-id">
-                            <span className="tee-id-label">{t('privacy.teeId')}:</span> 
-                            <span className="tee-id-value">{spot.encryptedId?.substring(0, 8)}...{spot.encryptedId?.substring(spot.encryptedId?.length - 6)}</span>
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="coordinates-info">
-                          {t('privacy.coordinates')}: {spot.coordinates[1].toFixed(6)}, {spot.coordinates[0].toFixed(6)}
-                        </p>
-                      )}
-                      
-                      <p className="spot-rewards-count">
-                        {t('mapMenu.rewardsNearby')}: {countRewardsForSpot(spot.id)}
+              
+              {onTogglePrivacyHeatmap && (
+                <div className="privacy-heatmap-card" 
+                     onMouseEnter={() => setShowHeatmapTooltip(true)}
+                     onMouseLeave={() => setShowHeatmapTooltip(false)}>
+                  <button 
+                    className={`heatmap-toggle-btn ${showPrivacyHeatmap ? 'active' : ''}`}
+                    onClick={handleToggleHeatmap}
+                  >
+                    <span className="heatmap-icon">🔒</span>
+                    {showPrivacyHeatmap ? t('privacy.hideHeatmap') : t('privacy.showHeatmap')}
+                  </button>
+                  
+                  {showHeatmapTooltip && (
+                    <div className="privacy-tooltip">
+                      <p>
+                        <span className="privacy-icon">🔒</span>
+                        This heatmap shows areas of activity without revealing individual GPS data. All analytics are computed within the TEE.
                       </p>
-                      <div className="spot-actions">
-                        <button onClick={() => handleSpotClick(spot.coordinates)}>{t('mapMenu.viewOnMap')}</button>
-                        {onShowAnalytics && (
-                          <button 
-                            onClick={() => onShowAnalytics({ name: spot.name, coordinates: spot.coordinates })}
-                            className="analytics-btn"
-                          >
-                            {t('mapMenu.viewAnalytics')}
-                          </button>
-                        )}
-                        <button onClick={() => handleDeleteSpot(spot.id)} className="delete-btn">{t('mapMenu.delete')}</button>
-                      </div>
                     </div>
-                  </div>
-                ))
+                  )}
+                </div>
               )}
             </div>
-          </div>
+          )}
+          
+          {/* New tab for treasure hunting */}
+          {activeTab === 'treasure' && (
+            <div className="treasure-tab-content">
+              <div className="treasure-controls">
+                <p className="treasure-description">
+                  {t('treasureBox.crossChainExplanation')}
+                </p>
+                <button 
+                  className="select-area-button" 
+                  onClick={handleSelectAreaForTreasure}
+                >
+                  {t('treasureBox.selectBlockchain')}
+                </button>
+              </div>
+              
+              {showTreasureBox && (
+                <TreasureBox 
+                  onClose={() => setShowTreasureBox(false)}
+                  selectedArea={selectedArea}
+                  pois={poisInArea}
+                  onSubscriptionSuccess={handleSubscriptionSuccess}
+                  isToolboxMode={true}
+                />
+              )}
+            </div>
+          )}
         </div>
         
         {showRewardInfo && selectedReward && (
