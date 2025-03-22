@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
-import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator';
 import { ThemeMode } from '../App';
+import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator';
 import { ZKLocationProofCard } from './ZKLocationProofCard';
 import { encryptLocationData } from '../utils/privacyUtils'; // Import encryption utility
-import { TreasureBox } from './treasure/TreasureBox'; // Import TreasureBox component
-import { POI, getPOIsInArea } from '../utils/contractUtils'; // Import POI and getPOIsInArea
+import { registerPOI } from '../utils/contractUtils';
+import { useWallets } from '@privy-io/react-auth';
 
 interface Spot {
   id: string;
   name: string;
   coordinates: [number, number];
   description?: string;
-  emoji: string; // 改成emoji而不是imageUrl
+  emoji: string; // Emoji instead of imageUrl
   tags: string[]; // Add tags field
   hasVisitProof?: boolean; // New field to track if user has proven visit
   encryptedId?: string; // Add encrypted ID field
@@ -23,7 +23,7 @@ interface Spot {
 // Available tag options
 export const SPOT_TAGS = ['food', 'photo', 'nature', 'shopping', 'culture', 'other'];
 
-// 可用的emoji选项
+// Available emoji options
 export const SPOT_EMOJIS = [
   '🏞️', '🗻', '🌋', '🏝️', '🏖️', '🏜️', '🌄', '🌅', '🌇', '🌉', '🌆', '🌃',
   '🏙️', '🌁', '🗼', '🏰', '🏯', '🏛️', '⛩️', '🕌', '🕍', '⛪', '🏢', '🏣',
@@ -46,12 +46,17 @@ interface MapMenuProps {
 
 export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards, setRewards, theme, onShowAnalytics, onTogglePrivacyHeatmap }: MapMenuProps) {
   const { t, i18n } = useTranslation();
+  const { wallets } = useWallets();
+  
+  // Get embedded wallet for transactions
+  const embeddedWallet = wallets?.find(wallet => wallet.walletClientType === 'privy');
+  
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [isAddingSpot, setIsAddingSpot] = useState(false);
   const [newSpotName, setNewSpotName] = useState('');
   const [newSpotDescription, setNewSpotDescription] = useState('');
-  const [newSpotEmoji, setNewSpotEmoji] = useState('🏞️'); // 默认emoji
+  const [newSpotEmoji, setNewSpotEmoji] = useState('🏞️'); // Default emoji
   const [newSpotTags, setNewSpotTags] = useState<string[]>(['other']); // Default tag
   const [addSpotPosition, setAddSpotPosition] = useState<[number, number] | null>(null);
   const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
@@ -68,20 +73,9 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false);
   const [showHeatmapTooltip, setShowHeatmapTooltip] = useState(false);
   
-  // Add the active tab state
-  const [activeTab, setActiveTab] = useState<'spots' | 'rewards' | 'treasure'>('spots');
-  
-  // TreasureBox related states
-  const [showTreasureBox, setShowTreasureBox] = useState(false);
-  const [selectedArea, setSelectedArea] = useState<{
-    name: string;
-    coordinates: [number, number];
-    radius: number;
-  } | undefined>(undefined);
-  
-  // Add POIs state for TreasureBox
-  const [poisInArea, setPoisInArea] = useState<POI[]>([]);
-  
+  // Add the active tab state - only spots and rewards now
+  const [activeTab, setActiveTab] = useState<'spots' | 'rewards'>('spots');
+
   // Effect to handle map clicks
   useEffect(() => {
     if (!map || !clickedPosition) return;
@@ -392,8 +386,47 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   };
   
   // Handle successful proof generation
-  const handleProofGenerated = (isValid: boolean) => {
+  const handleProofGenerated = async (isValid: boolean) => {
     if (isValid && selectedSpot) {
+      try {
+        // First register the POI on the blockchain
+        if (embeddedWallet) {
+          const provider = await embeddedWallet.getEthereumProvider();
+          
+          // Switch to Sepolia for L1 contract
+          try {
+            const sepoliaChainId = 11155111;
+            await embeddedWallet.switchChain(sepoliaChainId);
+          } catch (err) {
+            console.error("Error switching to Sepolia:", err);
+          }
+          
+          // Random price between 0.001 and 0.01 ETH for demo
+          const subscriptionPrice = (Math.random() * 0.009 + 0.001).toFixed(4);
+          
+          // Register the POI with the selected spot data
+          const result = await registerPOI(
+            provider,
+            selectedSpot.name,
+            selectedSpot.coordinates[1], // lat
+            selectedSpot.coordinates[0], // lng
+            "0.01", // stake amount
+            true, // requires subscription
+            subscriptionPrice
+          );
+          
+          if (result.success) {
+            console.log(`POI registered successfully with ID: ${result.poiId}`);
+            alert(t('mapMenu.poiRegisteredSuccess', { poiId: result.poiId }));
+          } else {
+            console.error("Failed to register POI:", result.error);
+            alert(t('mapMenu.poiRegistrationFailed'));
+          }
+        }
+      } catch (error) {
+        console.error("Error during POI registration:", error);
+      }
+      
       // Update spot to mark it as having a visit proof
       setSpots(prev => 
         prev.map(spot => 
@@ -420,52 +453,8 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
-  // Handle selecting an area for treasure hunting
-  const handleSelectAreaForTreasure = () => {
-    if (!coordinates) return;
-    
-    // Create a selected area with current map center
-    const area = {
-      name: `Area ${new Date().toLocaleTimeString()}`,
-      coordinates: coordinates,
-      radius: 1 // 1km radius
-    };
-    
-    setSelectedArea(area);
-    
-    // Fetch POIs in the selected area
-    fetchPOIsInArea(area.coordinates, area.radius);
-    
-    // Show the treasure box
-    setShowTreasureBox(true);
-  };
-  
-  // Function to fetch POIs in the selected area
-  const fetchPOIsInArea = async (coordinates: [number, number], radius: number) => {
-    try {
-      // Calculate min/max coordinates for the bounding box
-      const minLat = coordinates[1] - radius * 0.008; // ~1km ≈ 0.008 degrees of latitude
-      const maxLat = coordinates[1] + radius * 0.008;
-      const minLng = coordinates[0] - radius * 0.011; // ~1km at equator ≈ 0.011 degrees of longitude
-      const maxLng = coordinates[0] + radius * 0.011;
-      
-      // Fetch POIs from contract utils
-      const pois = await getPOIsInArea(minLat, maxLat, minLng, maxLng);
-      setPoisInArea(pois);
-    } catch (error) {
-      console.error('Error fetching POIs:', error);
-      setPoisInArea([]);
-    }
-  };
-  
-  // Handle subscription success
-  const handleSubscriptionSuccess = () => {
-    // Maybe update some state or show notification
-    console.log('Subscription successful');
-  };
-
-  // Handle tab change
-  const handleTabChange = (tab: 'spots' | 'rewards' | 'treasure') => {
+  // Handle tab change - updated for only spots and rewards
+  const handleTabChange = (tab: 'spots' | 'rewards') => {
     setActiveTab(tab);
   };
 
@@ -474,9 +463,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
       <div className={`map-menu ${theme === 'dark' ? 'dark-theme' : ''} ${isMenuCollapsed ? 'collapsed' : ''}`}>
         <div className="menu-header">
           <h2>{t('mapMenu.title')}</h2>
-          <button className="toggle-menu" onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}>
-            {isMenuCollapsed ? '↓' : '↑'}
-          </button>
         </div>
         
         <div className="menu-content">
@@ -493,12 +479,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             >
               {t('mapMenu.rewardsTab')}
             </button>
-            <button 
-              className={activeTab === 'treasure' ? 'active' : ''} 
-              onClick={() => handleTabChange('treasure')}
-            >
-              {t('treasureBox.title')}
-            </button>
           </div>
           
           {/* Existing content for spots tab */}
@@ -506,7 +486,9 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             <div className="spots-section">
               <div className="spots-header">
                 <h3>{t('mapMenu.privateSpots')}</h3>
-                <button onClick={() => !isAddingSpot && setIsAddingSpot(true)}>{t('mapMenu.addSpot')}</button>
+                <button onClick={() => !isAddingSpot && setIsAddingSpot(true)}>
+                  {t('mapMenu.addSpot')}
+                </button>
               </div>
 
               {/* Tags for filtering */}
@@ -574,8 +556,19 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                   </div>
                   
                   <div className="add-spot-buttons">
-                    <button onClick={handleAddSpot} disabled={!newSpotName}>{t('mapMenu.saveSpot')}</button>
-                    <button onClick={handleCancelAddSpot}>{t('mapMenu.cancel')}</button>
+                    <button 
+                      onClick={handleAddSpot} 
+                      disabled={!newSpotName}
+                      className="save-button"
+                    >
+                      {t('mapMenu.saveSpot')}
+                    </button>
+                    <button 
+                      onClick={handleCancelAddSpot}
+                      className="cancel-button"
+                    >
+                      {t('mapMenu.cancel')}
+                    </button>
                   </div>
                 </div>
               )}
@@ -601,7 +594,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                             <span key={tag} className="tag-badge">{t(`tags.${tag}`)}</span>
                           ))}
                         </div>
-                        <p>{spot.description || t('mapMenu.noDescription')}</p>
+                        <p className="spot-description">{spot.description || t('mapMenu.noDescription')}</p>
                         
                         {/* Show encrypted ID or coordinates based on privacy mode */}
                         {spot.isEncrypted ? (
@@ -621,16 +614,26 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                           {t('mapMenu.rewardsNearby')}: {countRewardsForSpot(spot.id)}
                         </p>
                         <div className="spot-actions">
-                          <button onClick={() => handleSpotClick(spot.coordinates)}>{t('mapMenu.viewOnMap')}</button>
+                          <button 
+                            onClick={() => handleSpotClick(spot.coordinates)}
+                            className="view-button"
+                          >
+                            {t('mapMenu.viewOnMap')}
+                          </button>
                           {onShowAnalytics && (
                             <button 
                               onClick={() => onShowAnalytics({ name: spot.name, coordinates: spot.coordinates })}
-                              className="analytics-btn"
+                              className="analytics-button"
                             >
                               {t('mapMenu.viewAnalytics')}
                             </button>
                           )}
-                          <button onClick={() => handleDeleteSpot(spot.id)} className="delete-btn">{t('mapMenu.delete')}</button>
+                          <button 
+                            onClick={() => handleDeleteSpot(spot.id)} 
+                            className="delete-button"
+                          >
+                            {t('mapMenu.delete')}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -647,7 +650,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
               <p>{t('mapMenu.rewardsExplanation')}</p>
               <div className="reward-types">
                 <div className="reward-type">
-                  <span className="reward-emoji">��</span> {t('mapMenu.highValueReward')}
+                  <span className="reward-emoji">💎</span> {t('mapMenu.highValueReward')}
                 </div>
                 <div className="reward-type">
                   <span className="reward-emoji">⭐️</span> {t('mapMenu.mediumValueReward')}
@@ -673,38 +676,11 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                     <div className="privacy-tooltip">
                       <p>
                         <span className="privacy-icon">🔒</span>
-                        This heatmap shows areas of activity without revealing individual GPS data. All analytics are computed within the TEE.
+                        {t('privacy.heatmapTooltip')}
                       </p>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-          
-          {/* New tab for treasure hunting */}
-          {activeTab === 'treasure' && (
-            <div className="treasure-tab-content">
-              <div className="treasure-controls">
-                <p className="treasure-description">
-                  {t('treasureBox.crossChainExplanation')}
-                </p>
-                <button 
-                  className="select-area-button" 
-                  onClick={handleSelectAreaForTreasure}
-                >
-                  {t('treasureBox.selectBlockchain')}
-                </button>
-              </div>
-              
-              {showTreasureBox && (
-                <TreasureBox 
-                  onClose={() => setShowTreasureBox(false)}
-                  selectedArea={selectedArea}
-                  pois={poisInArea}
-                  onSubscriptionSuccess={handleSubscriptionSuccess}
-                  isToolboxMode={true}
-                />
               )}
             </div>
           )}
@@ -715,8 +691,20 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             <h3>{t('mapMenu.rewardFound')}</h3>
             <div className="reward-emoji-large">{selectedReward.emoji}</div>
             <p>{t('mapMenu.rewardDescription')}</p>
-            <button onClick={() => handleCollectReward(selectedReward.id)}>{t('mapMenu.collectReward')}</button>
-            <button onClick={() => setShowRewardInfo(false)}>{t('mapMenu.closeReward')}</button>
+            <div className="reward-action-buttons">
+              <button 
+                onClick={() => handleCollectReward(selectedReward.id)}
+                className="collect-button"
+              >
+                {t('mapMenu.collectReward')}
+              </button>
+              <button 
+                onClick={() => setShowRewardInfo(false)}
+                className="close-button"
+              >
+                {t('mapMenu.closeReward')}
+              </button>
+            </div>
           </div>
         )}
         
@@ -731,15 +719,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             <button 
               className="close-proof-card"
               onClick={() => setShowZKProofCard(false)}
-              style={{
-                backgroundColor: '#f44336',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginTop: '10px'
-              }}
             >
               {t('common.close')}
             </button>

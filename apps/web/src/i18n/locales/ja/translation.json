@@ -92,6 +92,8 @@
     "useDefaultLocation": "デフォルト位置（日本）を使用"
   },
   "mapMenu": {
+    "spotTab": "スポット",
+    "rewardTab": "報酬",
     "searchPlaceholder": "場所を検索...",
     "searchButton": "検索",
     "coordinates": "座標",

@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { POI } from '../../utils/contractUtils';
 import { L1Card } from './L1Card';
 import { L2Card } from './L2Card';
 import { PrivateShareForm } from './PrivateShareForm';
+import { POI } from '../../utils/contractUtils';
 import '../../styles/TreasureBox.css';
 
+// Card types for selection
+enum CardType {
+  None = 'none',
+  L1 = 'l1',
+  L2 = 'l2',
+  PrivateShare = 'private'
+}
+
 interface TreasureBoxProps {
+  isOpen: boolean;
   onClose: () => void;
   selectedArea?: {
     name: string;
@@ -14,153 +23,128 @@ interface TreasureBoxProps {
     radius: number; // radius in kilometers
   };
   pois?: POI[];
-  onSubscriptionSuccess?: () => void;
-  isToolboxMode?: boolean; // New prop to identify if opened from toolbox
+  isToolboxMode?: boolean;
 }
 
-// Define card selection options
-enum CardType {
-  L1Card = 'l1',
-  L2Card = 'l2',
-  PrivateShare = 'private'
-}
-
-export function TreasureBox({
-  onClose,
+export function TreasureBox({ 
+  isOpen, 
+  onClose, 
   selectedArea,
-  pois = [],
-  onSubscriptionSuccess,
-  isToolboxMode = false
+  pois = [], 
+  isToolboxMode = false 
 }: TreasureBoxProps) {
   const { t } = useTranslation();
+  const [selectedCard, setSelectedCard] = useState<CardType>(CardType.None);
   
-  // State for card selection in toolbox mode
-  const [selectedCard, setSelectedCard] = useState<CardType | null>(isToolboxMode ? null : CardType.L1Card);
+  // Handle closing the treasure box
+  const handleClose = () => {
+    setSelectedCard(CardType.None);
+    onClose();
+  };
   
-  // Handle going back to card selection
+  // Handle returning to card selection
   const handleBack = () => {
-    setSelectedCard(null);
+    setSelectedCard(CardType.None);
   };
   
-  // Handle success from any card components
+  // Handle success callbacks
   const handleSuccess = () => {
-    if (onSubscriptionSuccess) {
-      onSubscriptionSuccess();
-    }
+    // Optional: Add any additional logic on success
+    // For now, just stay on the current card
   };
-
-  // Toolbox mode content - selecting either L1, L2, or Private Share card
-  const renderToolboxModeContent = () => {
-    if (selectedCard === null) {
-      return (
-        <div className="treasure-box-card-selector">
-          <h3>{t('treasureBox.selectBlockchain')}</h3>
-          
-          <div className="treasure-box-card-grid">
-            <div 
-              className="treasure-box-card l1-card" 
-              onClick={() => setSelectedCard(CardType.L1Card)}
-            >
-              <div className="treasure-box-card-icon">🏙️</div>
-              <h4>{t('treasureBox.l1Card')}</h4>
-              <p>{t('treasureBox.l1CardDescription')}</p>
-              <div className="treasure-box-card-network">
-                <span className="network-dot sepolia"></span>
-                Sepolia
-              </div>
-            </div>
-            
-            <div 
-              className="treasure-box-card l2-card" 
-              onClick={() => setSelectedCard(CardType.L2Card)}
-            >
-              <div className="treasure-box-card-icon">🔍</div>
-              <h4>{t('treasureBox.l2Card')}</h4>
-              <p>{t('treasureBox.l2CardDescription')}</p>
-              <div className="treasure-box-card-network">
-                <span className="network-dot t1"></span>
-                T1
-              </div>
-            </div>
-
-            <div 
-              className="treasure-box-card private-share-card" 
-              onClick={() => setSelectedCard(CardType.PrivateShare)}
-            >
-              <div className="treasure-box-card-icon">🔒</div>
-              <h4>{t('treasureBox.privateShareTitle')}</h4>
-              <p>{t('treasureBox.privateShareDescription')}</p>
-              <div className="treasure-box-card-network">
-                <span className="network-dot tee"></span>
-                TEE Zone
-              </div>
-            </div>
+  
+  // Render card selector
+  const renderCardSelector = () => {
+    return (
+      <div className="treasure-box-card-selector">
+        <h3>{t('treasureBox.selectOptionTitle')}</h3>
+        <p>{t('treasureBox.selectOptionDescription')}</p>
+        
+        <div className="card-options">
+          <div 
+            className="card-option l1-card"
+            onClick={() => setSelectedCard(CardType.L1)}
+          >
+            <div className="option-icon l1-icon">L1</div>
+            <h4>{t('treasureBox.l1CardName')}</h4>
+            <p>{t('treasureBox.l1CardDescription')}</p>
           </div>
           
-          <div className="treasure-box-info">
-            <h4>{t('treasureBox.howItWorks')}</h4>
-            <p>{t('treasureBox.crossChainExplanation')}</p>
+          <div 
+            className="card-option l2-card"
+            onClick={() => setSelectedCard(CardType.L2)}
+          >
+            <div className="option-icon l2-icon">L2</div>
+            <h4>{t('treasureBox.l2CardName')}</h4>
+            <p>{t('treasureBox.l2CardDescription')}</p>
+          </div>
+          
+          <div 
+            className="card-option private-card"
+            onClick={() => setSelectedCard(CardType.PrivateShare)}
+          >
+            <div className="option-icon private-icon">TEE</div>
+            <h4>{t('treasureBox.privateCardName')}</h4>
+            <p>{t('treasureBox.privateCardDescription')}</p>
           </div>
         </div>
-      );
-    }
-    
-    // Render the selected card component
+      </div>
+    );
+  };
+  
+  // Render the selected card content
+  const renderSelectedCard = () => {
     switch (selectedCard) {
-      case CardType.L1Card:
+      case CardType.L1:
         return (
           <L1Card 
-            onBack={handleBack} 
-            onSubscriptionSuccess={handleSuccess}
+            onBack={handleBack}
             selectedArea={selectedArea}
             pois={pois}
-            isToolboxMode={true}
+            onSubscriptionSuccess={handleSuccess}
+            isToolboxMode={isToolboxMode}
           />
         );
-      
-      case CardType.L2Card:
+      case CardType.L2:
         return (
           <L2Card 
             onBack={handleBack}
-            isToolboxMode={true}
+            selectedArea={selectedArea}
+            pois={pois}
+            onBidSuccess={handleSuccess}
+            isToolboxMode={isToolboxMode}
           />
         );
-      
       case CardType.PrivateShare:
         return (
           <PrivateShareForm 
             onBack={handleBack}
-            onSuccess={handleSuccess}
+            selectedArea={selectedArea}
+            onShareSuccess={handleSuccess}
+            isToolboxMode={isToolboxMode}
           />
         );
-      
       default:
-        return null;
+        return renderCardSelector();
     }
   };
-
-  // Area mode content - subscribing to POIs in a selected area
-  const renderAreaModeContent = () => {
-    return (
-      <L1Card 
-        onBack={() => {}} 
-        onSubscriptionSuccess={onSubscriptionSuccess}
-        selectedArea={selectedArea}
-        pois={pois}
-        isToolboxMode={false}
-      />
-    );
-  };
-
+  
+  // Don't render anything if not open
+  if (!isOpen) return null;
+  
   return (
     <div className="treasure-box-container">
-      <div className="treasure-box-header">
-        <h2>{t('treasureBox.title')}</h2>
-        <button className="close-button" onClick={onClose}>×</button>
-      </div>
+      <div className="treasure-box-overlay" onClick={handleClose}></div>
       
       <div className="treasure-box-content">
-        {isToolboxMode ? renderToolboxModeContent() : renderAreaModeContent()}
+        <div className="treasure-box-header">
+          <h2>{t('treasureBox.title')}</h2>
+          <button className="close-button" onClick={handleClose}>×</button>
+        </div>
+        
+        <div className="treasure-box-body">
+          {renderSelectedCard()}
+        </div>
       </div>
     </div>
   );

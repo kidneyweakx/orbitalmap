@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { POI, subscribeToPOI, isUserSubscribedToPOI, getAuctionStatus, CONTRACTS } from '../utils/contractUtils';
-import axios from 'axios';
+import { POI, subscribeToPOI, isUserSubscribedToPOI, getAuctionData, CONTRACTS } from '../utils/contractUtils';
 import '../styles/TreasureBox.css';
 
 interface TreasureBoxProps {
@@ -21,7 +19,8 @@ interface TreasureBoxProps {
 // Define card selection options
 enum CardType {
   L1Card = 'l1',
-  L2Card = 'l2'
+  L2Card = 'l2',
+  TEEZONE = 'teezone'
 }
 
 // Interface matching the contract's getAuctionStatus return structure
@@ -52,8 +51,8 @@ export function TreasureBox({
   isToolboxMode = false
 }: TreasureBoxProps) {
   const { t } = useTranslation();
-  const { wallet } = usePrivy();
   const { wallets } = useWallets();
+  const { user } = usePrivy();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,24 +62,17 @@ export function TreasureBox({
   const [subscriptionStatus, setSubscriptionStatus] = useState<{[key: string]: boolean}>({});
   
   // New state variables for toolbox mode
-  const [selectedCard, setSelectedCard] = useState<CardType | null>(isToolboxMode ? null : CardType.L1Card);
+  const [activeCard, setActiveCard] = useState<CardType | null>(isToolboxMode ? null : CardType.L1Card);
   const [auctionDisplayData, setAuctionDisplayData] = useState<AuctionDisplayData | null>(null);
   const [auctionLoading, setAuctionLoading] = useState(false);
-  const [privateLocation, setPrivateLocation] = useState<{lat: number; lng: number; name: string; description: string}>({
-    lat: 0,
-    lng: 0,
-    name: '',
-    description: ''
-  });
-  const [sharingLocation, setSharingLocation] = useState(false);
 
   // Get user's embedded wallet
-  const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
+  const embeddedWallet = wallets?.find(wallet => wallet.walletClientType === 'privy');
 
   // Filter subscription-required POIs on mount
   useEffect(() => {
     if (pois && pois.length > 0) {
-      const premium = pois.filter(poi => poi.isSubscriptionRequired);
+      const premium = pois.filter(poi => poi.requiresSubscription);
       setPremiumPOIs(premium);
     }
   }, [pois]);
@@ -88,14 +80,14 @@ export function TreasureBox({
   // Check subscription status for all premium POIs
   useEffect(() => {
     const checkSubscriptions = async () => {
-      if (!wallet?.address || premiumPOIs.length === 0) return;
+      if (!user?.wallet?.address || premiumPOIs.length === 0) return;
       
       const status: {[key: string]: boolean} = {};
       
       for (const poi of premiumPOIs) {
         try {
           const isSubscribed = await isUserSubscribedToPOI(
-            wallet.address as `0x${string}`, 
+            user.wallet.address as `0x${string}`, 
             BigInt(poi.id)
           );
           status[poi.id] = isSubscribed;
@@ -109,7 +101,7 @@ export function TreasureBox({
     };
     
     checkSubscriptions();
-  }, [wallet?.address, premiumPOIs]);
+  }, [user?.wallet?.address, premiumPOIs]);
 
   // Handle POI selection
   const handleSelectPOI = (poi: POI) => {
@@ -125,7 +117,7 @@ export function TreasureBox({
     setError(null);
     
     try {
-      const data = await getAuctionStatus(BigInt(poi.id));
+      const data = await getAuctionData(BigInt(poi.id));
       
       if (data) {
         // Type assertion to match the contract's return structure
@@ -167,7 +159,7 @@ export function TreasureBox({
   // Handle subscription
   const handleSubscribe = async () => {
     if (!selectedPOI) return;
-    if (!wallet) {
+    if (!user) {
       setError(t('treasureBox.errorNoWallet'));
       return;
     }
@@ -223,7 +215,7 @@ export function TreasureBox({
 
   // Toolbox mode content - selecting either L1 or L2 card
   const renderToolboxModeContent = () => {
-    if (selectedCard === null) {
+    if (activeCard === null) {
       return (
         <div className="treasure-box-card-selector">
           <h3>{t('treasureBox.selectBlockchain')}</h3>
@@ -231,7 +223,7 @@ export function TreasureBox({
           <div className="treasure-box-card-grid">
             <div 
               className="treasure-box-card l1-card" 
-              onClick={() => setSelectedCard(CardType.L1Card)}
+              onClick={() => setActiveCard(CardType.L1Card)}
             >
               <div className="treasure-box-card-icon">🏙️</div>
               <h4>{t('treasureBox.l1Card')}</h4>
@@ -247,7 +239,7 @@ export function TreasureBox({
             
             <div 
               className="treasure-box-card l2-card" 
-              onClick={() => setSelectedCard(CardType.L2Card)}
+              onClick={() => setActiveCard(CardType.L2Card)}
             >
               <div className="treasure-box-card-icon">🔍</div>
               <h4>{t('treasureBox.l2Card')}</h4>
@@ -271,10 +263,10 @@ export function TreasureBox({
     }
     
     // L1 POI Marketplace card content
-    if (selectedCard === CardType.L1Card) {
+    if (activeCard === CardType.L1Card) {
       return (
         <div className="treasure-box-card-content">
-          <button className="back-button" onClick={() => setSelectedCard(null)}>
+          <button className="back-button" onClick={() => setActiveCard(null)}>
             ← {t('common.back')}
           </button>
           
@@ -315,10 +307,10 @@ export function TreasureBox({
     }
     
     // L2 POI Auction card content
-    if (selectedCard === CardType.L2Card) {
+    if (activeCard === CardType.L2Card) {
       return (
         <div className="treasure-box-card-content">
-          <button className="back-button" onClick={() => setSelectedCard(null)}>
+          <button className="back-button" onClick={() => setActiveCard(null)}>
             ← {t('common.back')}
           </button>
           
@@ -389,7 +381,7 @@ export function TreasureBox({
                   <div className="poi-price">
                     {subscriptionStatus[poi.id] 
                       ? <span className="subscribed-tag">{t('treasureBox.subscribed')}</span>
-                      : <span>{formatEther(poi.subscriptionPrice)} ETH</span>
+                      : <span>{poi.subscriptionPrice} ETH</span>
                     }
                   </div>
                 </li>
@@ -404,7 +396,7 @@ export function TreasureBox({
             <p className="poi-name">{selectedPOI.name}</p>
             <p className="poi-description">{t('treasureBox.premiumDescription')}</p>
             <p className="subscription-price">
-              {t('treasureBox.price')}: <strong>{formatEther(selectedPOI.subscriptionPrice)} ETH</strong>
+              {t('treasureBox.price')}: <strong>{selectedPOI.subscriptionPrice} ETH</strong>
             </p>
             
             <div className="button-group">
@@ -461,55 +453,6 @@ export function TreasureBox({
         </div>
       </>
     );
-  };
-
-  // Handle private location sharing via Marlin TEEZone
-  const sharePrivateLocation = async () => {
-    if (!privateLocation.name || privateLocation.lat === 0 || privateLocation.lng === 0) {
-      setError(t('treasureBox.privateShareError'));
-      return;
-    }
-
-    setSharingLocation(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Get the TEE API endpoint from environment variables
-      const teeApiEndpoint = import.meta.env.VITE_TEE_API_ENDPOINT || 'http://localhost:8080';
-      
-      // Prepare the data to be shared
-      const locationData = {
-        name: privateLocation.name,
-        description: privateLocation.description,
-        lat: privateLocation.lat,
-        lng: privateLocation.lng,
-        owner: wallet?.address || 'anonymous',
-        timestamp: Date.now(),
-        isPrivate: true
-      };
-
-      // Send the data to the Marlin TEEZone API
-      const response = await axios.post(`${teeApiEndpoint}/api/locations/share`, locationData);
-      
-      if (response.status === 200 || response.status === 201) {
-        setSuccess(t('treasureBox.privateShareSuccess'));
-        // Reset form
-        setPrivateLocation({
-          lat: 0,
-          lng: 0,
-          name: '',
-          description: ''
-        });
-      } else {
-        setError(t('treasureBox.privateShareError'));
-      }
-    } catch (err) {
-      console.error('Error sharing location via TEEZone:', err);
-      setError(t('treasureBox.privateShareError'));
-    } finally {
-      setSharingLocation(false);
-    }
   };
 
   return (

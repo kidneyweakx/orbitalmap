@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -30,6 +30,9 @@ function App() {
   const [clickedPosition, setClickedPosition] = useState<[number, number] | null>(null)
   const [rewards, setRewards] = useState<Reward[]>([])
   const rewardMarkersRef = useRef<{ [id: string]: mapboxgl.Marker }>({})
+  
+  // Add map center coordinates state - used for TreasureBox feature and determining current view
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
   
   // Theme state, default to dark
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark')
@@ -785,7 +788,7 @@ function App() {
     setShowTreasureBox(prev => typeof show === 'boolean' ? show : !prev);
   }, []);
 
-  // Function to select an area and open the Treasure Box
+  // Enhanced function to select an area and open the Treasure Box
   const handleSelectArea = useCallback(async (name: string, coordinates: [number, number], radius: number = 5) => {
     setSelectedArea({
       name,
@@ -823,11 +826,10 @@ function App() {
           lat: coordinates[1] + 0.01,
           lng: coordinates[0] + 0.01,
           owner: '0x123...',
-          stake: BigInt(100000000000000),
-          verificationState: 1, // Verified
-          timestamp: BigInt(Date.now()),
-          isSubscriptionRequired: true,
-          subscriptionPrice: BigInt(10000000000000000) // 0.01 ETH
+          subscriptionPrice: '0.01',
+          requiresSubscription: true,
+          verified: true,
+          isAuctionEnabled: true
         },
         {
           id: '2',
@@ -835,11 +837,10 @@ function App() {
           lat: coordinates[1] - 0.01,
           lng: coordinates[0] - 0.01,
           owner: '0x456...',
-          stake: BigInt(200000000000000),
-          verificationState: 1, // Verified
-          timestamp: BigInt(Date.now()),
-          isSubscriptionRequired: true,
-          subscriptionPrice: BigInt(5000000000000000) // 0.005 ETH
+          subscriptionPrice: '0.005',
+          requiresSubscription: true,
+          verified: true,
+          isAuctionEnabled: true
         }
       ]);
     }
@@ -852,8 +853,29 @@ function App() {
     if (map.current) {
       const center = map.current.getCenter();
       handleSelectArea('Current Map Center', [center.lng, center.lat]);
+    } else if (mapCenter) {
+      // Use stored map center when map object is not available
+      handleSelectArea('Current Map Center', mapCenter);
     }
   };
+  
+  // Update map center when the map moves
+  useEffect(() => {
+    if (!map.current) return;
+    
+    const updateMapCenter = () => {
+      const center = map.current?.getCenter();
+      if (center) {
+        setMapCenter([center.lng, center.lat]);
+      }
+    };
+    
+    map.current.on('moveend', updateMapCenter);
+    
+    return () => {
+      map.current?.off('moveend', updateMapCenter);
+    };
+  }, [map.current]);
 
   // Only render the map interface when authenticated
   // Otherwise show the login screen
@@ -950,13 +972,11 @@ function App() {
           {/* TreasureBox component */}
           {showTreasureBox && (
             <TreasureBox 
+              isOpen={showTreasureBox}
               onClose={() => toggleTreasureBox(false)}
               selectedArea={selectedArea}
               pois={poisInArea}
-              onSubscriptionSuccess={() => {
-                // You could update some state, reload POIs, or show a notification
-                console.log('Subscription successful!');
-              }}
+              isToolboxMode={true}
             />
           )}
         </>

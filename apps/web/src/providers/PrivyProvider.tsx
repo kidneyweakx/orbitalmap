@@ -28,7 +28,6 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
         },
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
-          noPromptOnSignature: true,
         },
         supportedChains: [
           { 
@@ -95,6 +94,19 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
         defaultChain: {
           id: 11155111, // Sepolia as default chain
           name: 'Sepolia',
+          nativeCurrency: {
+            name: 'Sepolia Ether',
+            symbol: 'SEP',
+            decimals: 18
+          },
+          rpcUrls: {
+            default: { http: ['https://1rpc.io/sepolia'] },
+            public: { http: ['https://1rpc.io/sepolia'] }
+          },
+          blockExplorers: {
+            default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' }
+          },
+          testnet: true
         },
       }}
     >

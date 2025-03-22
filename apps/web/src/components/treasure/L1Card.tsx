@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { POI, subscribeToPOI, isUserSubscribedToPOI, CONTRACTS } from '../../utils/contractUtils';
 
@@ -20,7 +19,7 @@ export function L1Card({
   onBack, 
   selectedArea, 
   pois = [], 
-  onSubscriptionSuccess,
+  onSubscriptionSuccess, 
   isToolboxMode = false 
 }: L1CardProps) {
   const { t } = useTranslation();
@@ -37,39 +36,38 @@ export function L1Card({
   // Get user's embedded wallet
   const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
 
-  // Filter subscription-required POIs on mount
-  useEffect(() => {
+  // Filter subscription-required POIs
+  useState(() => {
     if (pois && pois.length > 0) {
-      const premium = pois.filter(poi => poi.isSubscriptionRequired);
+      const premium = pois.filter(poi => poi.requiresSubscription);
       setPremiumPOIs(premium);
+      
+      // Check subscription status for all premium POIs
+      if (user?.wallet?.address) {
+        checkSubscriptions(premium, user.wallet.address as `0x${string}`);
+      }
     }
-  }, [pois]);
+  });
 
   // Check subscription status for all premium POIs
-  useEffect(() => {
-    const checkSubscriptions = async () => {
-      if (!user?.wallet?.address || premiumPOIs.length === 0) return;
-      
-      const status: {[key: string]: boolean} = {};
-      
-      for (const poi of premiumPOIs) {
-        try {
-          const isSubscribed = await isUserSubscribedToPOI(
-            user.wallet.address as `0x${string}`, 
-            BigInt(poi.id)
-          );
-          status[poi.id] = isSubscribed;
-        } catch (err) {
-          console.error("Error checking subscription for POI:", poi.id, err);
-          status[poi.id] = false;
-        }
-      }
-      
-      setSubscriptionStatus(status);
-    };
+  const checkSubscriptions = async (poiList: POI[], address: `0x${string}`) => {
+    const status: {[key: string]: boolean} = {};
     
-    checkSubscriptions();
-  }, [user?.wallet?.address, premiumPOIs]);
+    for (const poi of poiList) {
+      try {
+        const isSubscribed = await isUserSubscribedToPOI(
+          address, 
+          BigInt(poi.id)
+        );
+        status[poi.id] = isSubscribed;
+      } catch (err) {
+        console.error("Error checking subscription for POI:", poi.id, err);
+        status[poi.id] = false;
+      }
+    }
+    
+    setSubscriptionStatus(status);
+  };
 
   // Handle POI selection
   const handleSelectPOI = (poi: POI) => {
@@ -81,7 +79,7 @@ export function L1Card({
   // Handle subscription
   const handleSubscribe = async () => {
     if (!selectedPOI) return;
-    if (!user?.wallet) {
+    if (!user?.wallet?.address) {
       setError(t('treasureBox.errorNoWallet'));
       return;
     }
@@ -106,6 +104,12 @@ export function L1Card({
       
       // Get the provider from the wallet
       const provider = await embeddedWallet?.getEthereumProvider();
+      
+      if (!provider) {
+        setError(t('treasureBox.errorNoProvider'));
+        setLoading(false);
+        return;
+      }
       
       // Subscribe to the POI
       const result = await subscribeToPOI(
@@ -135,6 +139,7 @@ export function L1Card({
     }
   };
 
+  // Render the card in toolbox mode (info only, no interaction)
   if (isToolboxMode) {
     return (
       <div className="treasure-box-card-content">
@@ -187,7 +192,7 @@ export function L1Card({
     );
   }
 
-  // Area mode content - subscribing to POIs in a selected area
+  // Render the L1 card for actual POI subscription
   return (
     <div className="l1-card-content">
       {selectedArea && (
@@ -199,7 +204,7 @@ export function L1Card({
       
       {premiumPOIs.length === 0 ? (
         <div className="no-pois">
-          <p>{t('treasureBox.noPOIs')}</p>
+          <p>{t('treasureBox.noPremiumPOIs')}</p>
         </div>
       ) : (
         <div className="premium-pois-list">
@@ -214,8 +219,8 @@ export function L1Card({
                 <div className="poi-name">{poi.name}</div>
                 <div className="poi-price">
                   {subscriptionStatus[poi.id] 
-                    ? <span className="subscribed-tag">{t('treasureBox.alreadySubscribed')}</span>
-                    : <span>{formatEther(poi.subscriptionPrice)} ETH</span>
+                    ? <span className="subscribed-tag">{t('treasureBox.subscribed')}</span>
+                    : <span>{poi.subscriptionPrice} ETH</span>
                   }
                 </div>
               </li>
@@ -230,18 +235,16 @@ export function L1Card({
           <p className="poi-name">{selectedPOI.name}</p>
           <p className="poi-description">{t('treasureBox.premiumDescription')}</p>
           <p className="subscription-price">
-            {t('treasureBox.price')}: <strong>{formatEther(selectedPOI.subscriptionPrice)} ETH</strong>
+            {t('treasureBox.price')}: <strong>{selectedPOI.subscriptionPrice} ETH</strong>
           </p>
           
-          <div className="button-group">
-            <button 
-              className="subscribe-button" 
-              onClick={handleSubscribe}
-              disabled={loading}
-            >
-              {loading ? t('treasureBox.subscribing') : t('treasureBox.subscribe')}
-            </button>
-          </div>
+          <button 
+            className="subscribe-button" 
+            onClick={handleSubscribe}
+            disabled={loading}
+          >
+            {loading ? t('treasureBox.subscribing') : t('treasureBox.subscribe')}
+          </button>
         </div>
       )}
       
@@ -250,8 +253,7 @@ export function L1Card({
       
       <div className="treasure-box-info">
         <h4>{t('treasureBox.howItWorks')}</h4>
-        <p>{t('treasureBox.howItWorksDescription')}</p>
-        <p>{t('treasureBox.crossChainInfo')}</p>
+        <p>{t('treasureBox.l1MarketplaceExplanation')}</p>
       </div>
     </div>
   );

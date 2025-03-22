@@ -36,6 +36,61 @@ Allows users to share private location data through the Marlin TEEZone. Features
 - Integration with the TEE API
 - Privacy protection for sensitive location information
 
+## Smart Contract Integration
+
+The TreasureBox components integrate with smart contracts deployed on:
+- Sepolia testnet (L1) - POI Marketplace
+- T1 protocol (L2) - POI Auction and verification
+
+### Contract Functions
+
+The following contract functions are available:
+
+#### L1 Contract (Sepolia)
+
+- **registerPOI(name, lat, lng, requireSubscription, subscriptionPrice)**
+  - Register a new POI with stake
+  - Requires ETH for staking the POI
+  
+- **subscribeToPOI(poiId)**
+  - Subscribe to a premium POI
+  - Requires ETH payment for subscription
+  
+- **challengePOI(poiId)**
+  - Challenge an incorrectly verified POI
+  - Requires ETH for the challenge stake
+  
+- **getPOI(poiId)**
+  - Get detailed information about a POI
+
+#### L2 Contract (T1)
+
+- **placeBid(poiId, bidAmount)**
+  - Place a bid to verify a POI
+  - Requires T1 native token payment
+  
+- **submitProof(poiId, proof)**
+  - Submit verification proof from TEE
+  - Only callable by the winning bidder
+
+## Wallet Integration
+
+The TreasureBox uses Privy for wallet management and blockchain interactions:
+
+```typescript
+// Example of subscribing to a POI
+const provider = await embeddedWallet?.getEthereumProvider();
+const result = await subscribeToPOI(
+  provider, 
+  BigInt(poiId), 
+  subscriptionPrice
+);
+
+if (result.success) {
+  console.log("Successfully subscribed to POI", result.txHash);
+}
+```
+
 ## Usage
 
 ```tsx
@@ -51,15 +106,12 @@ import { TreasureBox } from './components/treasure';
 />
 ```
 
-## Integration with MapMenu
+## Integration with Toolbox
 
-The TreasureBox is integrated with the MapMenu component to provide users with an interface for selecting areas on the map and exploring POIs.
-
-## Contract Integration
-
-The components interact with smart contracts deployed on:
-- Sepolia testnet (L1) - POI Marketplace
-- T1 protocol (L2) - POI Auction and verification
+The TreasureBox is integrated with the Navbar's toolbox menu, allowing users to:
+1. Open the TreasureBox from the toolbox
+2. Select the current map area for exploring POIs
+3. Interact with L1/L2 contracts and TEE services
 
 ## TEE Integration
 

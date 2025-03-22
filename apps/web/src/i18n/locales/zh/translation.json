@@ -88,7 +88,9 @@
     "base": "基础",
     "satellite": "卫星",
     "settings": "设置",
-    "language": "语言"
+    "language": "语言",
+    "spotTab": "地点",
+    "rewardTab": "奖励"
   },
   "tags": {
     "food": "美食",
