@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import type { HonoContext } from '../../types/hono_context'
+import { callNillionLLM } from '../../utils/nillion'
 
 // Define the environment interface
 interface Env {
@@ -38,7 +39,13 @@ const UserLocationSchema = z.object({
 });
 
 const MapDataSchema = z.object({
-  markers: z.array(MarkerSchema).optional()
+  markers: z.array(MarkerSchema).optional(),
+  bounds: z.object({
+    north: z.number(),
+    south: z.number(),
+    east: z.number(),
+    west: z.number()
+  }).optional()
 });
 
 // Travel recommendation schemas
@@ -449,6 +456,189 @@ map_route.openapi(mapboxInteractionRoute, async (c) => {
     return c.json({ error: 'Failed to process map interaction' }, 500);
   }
 });
+
+// Create route
+export const map_interaction_route = new OpenAPIHono<HonoContext>();
+
+// Define schemas
+const MapBoundsSchema = z.object({
+  north: z.number(),
+  south: z.number(),
+  east: z.number(),
+  west: z.number()
+});
+
+const MapInteractionRequestSchema = z.object({
+  query: z.string(),
+  userLocation: UserLocationSchema,
+  mapData: MapDataSchema
+});
+
+const RecommendationPointSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  description: z.string(),
+  coordinates: z.tuple([z.number(), z.number()])
+});
+
+const MapInteractionResponseSchema = z.object({
+  response: z.string(),
+  points: z.array(RecommendationPointSchema).optional()
+});
+
+// Create OpenAPI route
+const mapInteractionRoute = createRoute({
+  method: 'post',
+  path: '/map-interaction',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: MapInteractionRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: MapInteractionResponseSchema
+        }
+      },
+      description: 'Successfully processed map interaction query'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            error: z.string()
+          })
+        }
+      },
+      description: 'Server error'
+    }
+  }
+});
+
+// Implement the route
+map_interaction_route.openapi(mapInteractionRoute, async (c) => {
+  try {
+    const { query, userLocation, mapData } = await c.req.json();
+    
+    // Create system prompt for the LLM
+    const systemPrompt = `你是一個專業的旅遊和美食推薦助手，能根據用戶的地理位置提供個性化建議。
+
+請根據以下信息為用戶提供推薦：
+- 用戶當前位置: 經度 ${userLocation.longitude}，緯度 ${userLocation.latitude}
+- 用戶查詢: "${query}"
+${mapData.bounds ? `- 地圖範圍: 北 ${mapData.bounds.north}，南 ${mapData.bounds.south}，東 ${mapData.bounds.east}，西 ${mapData.bounds.west}` : ''}
+
+根據用戶查詢類型，提供以下內容：
+1. 如果是關於景點的查詢：推薦5個當地熱門景點
+2. 如果是關於美食的查詢：推薦5個當地特色餐廳
+3. 如果是關於活動的查詢：推薦當地可參與的活動
+4. 其他類型的查詢：盡可能提供相關的有用信息
+
+對於每個推薦地點，請提供：
+- 名稱
+- 類型（例如：餐廳、景點、博物館等）
+- 簡短描述（2-3句話）
+- 座標 [經度, 緯度]（注意：這裡需要你根據用戶當前位置，生成合理的相對座標）
+
+請以 JSON 格式回覆，包含:
+1. "response": 一段簡短的回覆文本，總結你的推薦
+2. "points": 一個包含推薦地點的陣列，每個地點包含 "name", "type", "description", "coordinates" 欄位
+
+確保座標數據在用戶所在區域的合理範圍內。`;
+
+    // Call Nillion LLM
+    const llmResponse = await callNillionLLM(c.env.NILAI_API_URL, c.env.NILAI_API_KEY, systemPrompt, query);
+    
+    if (!llmResponse || !llmResponse.choices || !llmResponse.choices[0]?.message?.content) {
+      return c.json({ error: 'Failed to generate recommendations' }, 500);
+    }
+
+    try {
+      // Extract JSON from response
+      const contentText = llmResponse.choices[0].message.content;
+      const jsonMatch = contentText.match(/```json\n([\s\S]*?)\n```/) || contentText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const responseJson = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        return c.json(responseJson);
+      } else {
+        // Generate a simplified response if JSON parsing fails
+        return c.json({
+          response: "Here are some recommendations based on your query.",
+          points: generateFallbackRecommendations(userLocation, query)
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing LLM response:', error);
+      
+      // Return fallback response
+      return c.json({
+        response: "Here are some recommendations based on your location.",
+        points: generateFallbackRecommendations(userLocation, query)
+      });
+    }
+  } catch (error) {
+    console.error('Error processing map interaction:', error);
+    return c.json({ error: 'Failed to process map interaction query' }, 500);
+  }
+});
+
+// Helper function to generate fallback recommendations
+function generateFallbackRecommendations(userLocation: { longitude: number, latitude: number }, query: string) {
+  const isFood = query.toLowerCase().includes('food') || 
+                query.toLowerCase().includes('restaurant') || 
+                query.toLowerCase().includes('eat');
+  
+  if (isFood) {
+    return [
+      {
+        name: "Local Restaurant A",
+        type: "restaurant",
+        description: "A popular local restaurant with authentic cuisine.",
+        coordinates: [userLocation.longitude + 0.002, userLocation.latitude + 0.001]
+      },
+      {
+        name: "Cafe B",
+        type: "cafe",
+        description: "Cozy cafe with great coffee and pastries.",
+        coordinates: [userLocation.longitude - 0.001, userLocation.latitude + 0.003]
+      },
+      {
+        name: "Fine Dining C",
+        type: "restaurant",
+        description: "Upscale dining experience with excellent service.",
+        coordinates: [userLocation.longitude + 0.003, userLocation.latitude - 0.002]
+      }
+    ];
+  } else {
+    return [
+      {
+        name: "City Park",
+        type: "attraction",
+        description: "Beautiful city park with walking paths and gardens.",
+        coordinates: [userLocation.longitude + 0.001, userLocation.latitude + 0.002]
+      },
+      {
+        name: "History Museum",
+        type: "museum",
+        description: "Learn about the local history with interesting exhibits.",
+        coordinates: [userLocation.longitude - 0.002, userLocation.latitude - 0.001]
+      },
+      {
+        name: "Shopping Center",
+        type: "shopping",
+        description: "Modern shopping center with various stores and boutiques.",
+        coordinates: [userLocation.longitude + 0.004, userLocation.latitude + 0.001]
+      }
+    ];
+  }
+}
 
 // Helper function to call Nillion LLM API
 async function callNillionLLM(apiUrl: string, apiKey: string, systemPrompt: string, userPrompt: string): Promise<LLMResponse> {

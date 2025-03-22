@@ -209,5 +209,17 @@
   "testAPI": {
     "title": "無伺服器 API 測試",
     "selectEndpoint": "選擇要測試的 API 端點"
+  },
+  "mapChat": {
+    "title": "旅行助手",
+    "welcomeMessage": "你好！我可以幫你找到附近有趣的景點或美食。你想了解什麼呢？",
+    "inputPlaceholder": "詢問附近的景點或美食...",
+    "processing": "...",
+    "send": "發送",
+    "error": "抱歉，處理您的請求時遇到錯誤。請再試一次。",
+    "travelButton": "旅遊",
+    "foodButton": "美食",
+    "travelShortcut": "推薦附近的熱門景點",
+    "foodShortcut": "尋找附近好吃的餐廳"
   }
 }

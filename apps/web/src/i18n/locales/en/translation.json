@@ -323,5 +323,17 @@
     "aggregatedData": "Data shown is aggregated and anonymized",
     "noDataAvailable": "No analytics data available for this location",
     "hourFormat": "{{hour}}:00 - {{hour}}:59"
+  },
+  "mapChat": {
+    "title": "Travel Assistant",
+    "welcomeMessage": "Hello! I can help you find interesting places to visit or eat around you. What would you like to know?",
+    "inputPlaceholder": "Ask about places to visit or eat...",
+    "processing": "...",
+    "send": "Send",
+    "error": "Sorry, I encountered an error while processing your request. Please try again.",
+    "travelButton": "Travel",
+    "foodButton": "Food",
+    "travelShortcut": "Recommend top attractions near me",
+    "foodShortcut": "Find good restaurants nearby"
   }
 }

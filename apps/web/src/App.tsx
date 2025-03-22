@@ -13,6 +13,7 @@ import { BadgesModal } from './components/BadgesModal'
 import { validateRewardCollection, updateExplorationStats, generateRewardsAroundUser, ExplorationStats } from './utils/RewardSystem'
 import { PrivacyHeatmapLayer } from './components/PrivacyHeatmapLayer'
 import { LocationAnalyticsModal } from './components/LocationAnalyticsModal'
+import { MapChatAssistant } from './components/MapChatAssistant'
 
 // Create theme context
 export type ThemeMode = 'dark' | 'light';
@@ -682,6 +683,12 @@ function App() {
               onClose={handleCloseBadgesModal}
             />
           )}
+          
+          {/* Map Chat Assistant */}
+          <MapChatAssistant 
+            map={map?.current}
+            userLocation={clickedPosition || undefined}
+          />
         </>
       ) : (
         <Login 

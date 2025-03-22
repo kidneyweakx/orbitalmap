@@ -11,3 +11,9 @@ user
   .route('/user', chat_route)
   .route('/user', map_route)
   .route('/user', reward_route)
+
+export const userRoutes = [
+  chat_route,
+  map_route,
+  reward_route
+]
