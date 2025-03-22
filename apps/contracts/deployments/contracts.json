@@ -1,0 +1,16 @@
+{
+  "networks": {
+    "sepolia": {
+      "contracts": {
+        "L1POIMarketplace": "0x7427a2b79298fdd6506187d663a33ec0f1b008f4"
+      },
+      "deploymentTime": "2025-03-22T16:29:59.873Z"
+    },
+    "t1": {
+      "contracts": {
+        "L2POIAuction": "0x71fc3be4b619fd7c279c037ea0ee09c475175d11"
+      },
+      "deploymentTime": "2025-03-22T16:30:56.755Z"
+    }
+  }
+}
