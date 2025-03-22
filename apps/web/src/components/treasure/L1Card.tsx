@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { POI, subscribeToPOI, isUserSubscribedToPOI, CONTRACTS } from '../../utils/contractUtils';
+import { ContractFunctionButton } from './ContractFunctionButton';
+
+// Sepolia Network ID
+const SEPOLIA_NETWORK_ID = 11155111;
 
 interface L1CardProps {
   onBack: () => void;
@@ -33,9 +37,6 @@ export function L1Card({
   const [selectedPOI, setSelectedPOI] = useState<POI | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{[key: string]: boolean}>({});
   
-  // Get user's embedded wallet
-  const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
-
   // Filter subscription-required POIs
   useState(() => {
     if (pois && pois.length > 0) {
@@ -89,21 +90,17 @@ export function L1Card({
     setSuccess(null);
 
     try {
-      // Ensure the wallet is connected to the correct chain (Sepolia)
-      const sepoliaChainId = 11155111; // Sepolia chain ID as number
+      // Get the embedded wallet
+      const wallet = wallets.find(wallet => wallet.walletClientType === 'privy');
       
-      // Switch to Sepolia chain using the appropriate method for Privy
-      try {
-        await embeddedWallet?.switchChain(sepoliaChainId);
-      } catch (err) {
-        console.error("Error switching chain:", err);
-        setError(`${t('treasureBox.subscriptionFailed')}: ${t('treasureBox.errorSwitchingChain')}`);
+      if (!wallet) {
+        setError(t('treasureBox.errorNoWallet'));
         setLoading(false);
         return;
       }
       
       // Get the provider from the wallet
-      const provider = await embeddedWallet?.getEthereumProvider();
+      const provider = await wallet.getEthereumProvider();
       
       if (!provider) {
         setError(t('treasureBox.errorNoProvider'));
@@ -111,7 +108,7 @@ export function L1Card({
         return;
       }
       
-      // Subscribe to the POI
+      // Subscribe to the POI using subscribeToPOI function
       const result = await subscribeToPOI(
         provider, 
         BigInt(selectedPOI.id), 
@@ -160,7 +157,7 @@ export function L1Card({
           <div className="poi-demo-item">
             <h4>Tokyo Tower Premium Access</h4>
             <div className="poi-details">
-              <span>Price: 0.005 ETH</span>
+              <span>Price: 0.000001 ETH</span>
               <span>Subscribers: 27</span>
             </div>
             <div className="poi-details">
@@ -168,16 +165,21 @@ export function L1Card({
               <span>Data: Encrypted</span>
             </div>
             <div className="poi-actions">
-              <button className="demo-button primary" onClick={() => alert('Demo mode: You would subscribe to this POI in a real environment.')}>
-                {t('treasureBox.subscribe')}
-              </button>
+              <ContractFunctionButton 
+                contractFunction="subscribeToPOI"
+                functionArgs={["1", "0.000001"]} // poiId, price
+                buttonText={t('treasureBox.subscribe')}
+                networkId={SEPOLIA_NETWORK_ID}
+                onSuccess={() => alert(t('treasureBox.subscriptionSuccess'))}
+                onError={() => alert(t('treasureBox.subscriptionFailed'))}
+              />
             </div>
           </div>
           
           <div className="poi-demo-item">
             <h4>Shibuya Crossing Insider</h4>
             <div className="poi-details">
-              <span>Price: 0.01 ETH</span>
+              <span>Price: 0.000002 ETH</span>
               <span>Subscribers: 42</span>
             </div>
             <div className="poi-details">
@@ -197,9 +199,21 @@ export function L1Card({
               <span>Create and monetize your own Points of Interest</span>
             </div>
             <div className="poi-actions">
-              <button className="demo-button primary" onClick={() => alert('Demo mode: You would register a new POI in a real environment.')}>
-                Register POI
-              </button>
+              <ContractFunctionButton 
+                contractFunction="registerPOI"
+                functionArgs={[
+                  "My Custom POI", // name
+                  35.6812, // lat
+                  139.7671, // lng
+                  "0.000003", // stakeAmount
+                  true, // requiresSubscription
+                  "0.000001" // subscriptionPrice
+                ]}
+                buttonText="Register POI"
+                networkId={SEPOLIA_NETWORK_ID}
+                onSuccess={() => alert('POI registration successful!')}
+                onError={() => alert('POI registration failed!')}
+              />
             </div>
           </div>
         </div>

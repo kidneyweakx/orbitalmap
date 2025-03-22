@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { POI, CONTRACTS, getAuctionData, bidOnPOI } from '../../utils/contractUtils';
+import { ContractFunctionButton } from './ContractFunctionButton';
+
+// T1 Network ID (Ex-Optimism)
+const T1_NETWORK_ID = 11155420;
 
 // Local interface for auction data with bigint types
 interface AuctionData {
@@ -52,9 +56,6 @@ export function L2Card({
   const [bidAmount, setBidAmount] = useState<string>('');
   const [displayData, setDisplayData] = useState<{[key: string]: AuctionDisplayData}>({});
   
-  // Get user's embedded wallet
-  const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy');
-
   // Filter auction-enabled POIs
   useEffect(() => {
     if (pois && pois.length > 0) {
@@ -162,11 +163,17 @@ export function L2Card({
     setError(null);
     setSuccess(null);
     
-    // Set default bid amount to current highest bid + 10%
+    // Set default bid amount to current highest bid + 10% or a minimum small value
     if (auctionData[poi.id]) {
       const currentBid = auctionData[poi.id].highestBid;
-      const minBid = currentBid + (currentBid / BigInt(10));
+      // For very small bids, add a small fixed amount instead of percentage
+      const minBid = currentBid < parseEther("0.0001") 
+        ? currentBid + parseEther("0.0000001")  // Add 0.0000001 ETH to small bids
+        : currentBid + (currentBid / BigInt(10)); // Add 10% to larger bids
       setBidAmount(formatEther(minBid));
+    } else {
+      // Default small bid if no auction data
+      setBidAmount("0.0000001");
     }
   };
 
@@ -188,8 +195,18 @@ export function L2Card({
       const bidValue = parseEther(bidAmount);
       const currentBid = auctionData[selectedPOI.id]?.highestBid || BigInt(0);
       
+      // For very small bids, require at least 0.0000001 ETH more
+      const minIncrease = currentBid < parseEther("0.0001")
+        ? parseEther("0.0000001") // 0.0000001 ETH minimum increase for small bids
+        : currentBid / BigInt(10); // 10% minimum increase for larger bids
+        
       if (bidValue <= currentBid) {
         setError(t('treasureBox.errorBidTooLow'));
+        return;
+      }
+      
+      if (bidValue < currentBid + minIncrease) {
+        setError(`${t('treasureBox.errorBidIncreaseTooSmall')} (min: ${formatEther(currentBid + minIncrease)} ETH)`);
         return;
       }
     } catch (error) {
@@ -203,21 +220,17 @@ export function L2Card({
     setSuccess(null);
 
     try {
-      // Ensure the wallet is connected to the correct chain (T1)
-      const t1ChainId = 11155420; // T1 (Ex-Optimism) chain ID
+      // Get the embedded wallet
+      const wallet = wallets.find(wallet => wallet.walletClientType === 'privy');
       
-      // Switch to T1 chain using the appropriate method for Privy
-      try {
-        await embeddedWallet?.switchChain(t1ChainId);
-      } catch (err) {
-        console.error("Error switching chain:", err);
-        setError(`${t('treasureBox.bidFailed')}: ${t('treasureBox.errorSwitchingChain')}`);
+      if (!wallet) {
+        setError(t('treasureBox.errorNoWallet'));
         setLoading(false);
         return;
       }
       
       // Get the provider from the wallet
-      const provider = await embeddedWallet?.getEthereumProvider();
+      const provider = await wallet.getEthereumProvider();
       
       if (!provider) {
         setError(t('treasureBox.errorNoProvider'));
@@ -225,7 +238,7 @@ export function L2Card({
         return;
       }
       
-      // Place bid on the POI
+      // Place bid on the POI using bidOnPOI function
       const result = await bidOnPOI(
         provider, 
         BigInt(selectedPOI.id), 
@@ -274,7 +287,7 @@ export function L2Card({
               <div className="auction-timer">2h 15m left</div>
             </div>
             <div className="auction-info">
-              <span>Current bid: 0.25 ETH</span>
+              <span>Current bid: 0.000001 ETH</span>
               <span>Highest bidder: 0x7a21...f8e9</span>
             </div>
             
@@ -282,13 +295,18 @@ export function L2Card({
               <input
                 type="number"
                 className="bid-input"
-                step="0.01"
-                min="0.26"
-                placeholder="0.26"
+                step="0.0000001"
+                min="0.0000011"
+                placeholder="0.0000011"
               />
-              <button className="demo-button primary" onClick={() => alert('Demo mode: Your bid would be placed in a real environment.')}>
-                {t('treasureBox.placeBid')}
-              </button>
+              <ContractFunctionButton 
+                contractFunction="bidOnPOI"
+                functionArgs={["1", "0.0000011"]} // poiId, bidAmount
+                buttonText={t('treasureBox.placeBid')}
+                networkId={T1_NETWORK_ID}
+                onSuccess={() => alert(t('treasureBox.bidSuccess'))}
+                onError={() => alert(t('treasureBox.bidFailed'))}
+              />
             </div>
           </div>
           
@@ -298,7 +316,7 @@ export function L2Card({
               <div className="auction-timer">Auction ended</div>
             </div>
             <div className="auction-info">
-              <span>Final bid: 0.5 ETH</span>
+              <span>Final bid: 0.000005 ETH</span>
               <span>Winner: 0x3b91...c4d2</span>
             </div>
             <div className="poi-actions">
@@ -314,13 +332,18 @@ export function L2Card({
               <div className="auction-timer">1d 3h left</div>
             </div>
             <div className="auction-info">
-              <span>Current bid: 0.15 ETH</span>
+              <span>Current bid: 0.0000015 ETH</span>
               <span>Your status: Highest bidder</span>
             </div>
             <div className="poi-actions">
-              <button className="demo-button" onClick={() => alert('Demo mode: You are currently winning this auction!')}>
-                You're winning!
-              </button>
+              <ContractFunctionButton 
+                contractFunction="bidOnPOI"
+                functionArgs={["3", "0.000002"]} // poiId, bidAmount
+                buttonText="Increase Bid"
+                networkId={T1_NETWORK_ID}
+                onSuccess={() => alert('Your bid has been increased!')}
+                onError={() => alert('Failed to increase bid!')}
+              />
             </div>
           </div>
         </div>

@@ -26,7 +26,10 @@
     "dotenv": "^16.3.1",
     "dotenv-cli": "^7.4.0",
     "hardhat": "^2.19.4",
-    "typescript": "^5.3.3",
+    "typescript": "^5.0.4",
     "viem": "^2.7.12"
+  },
+  "resolutions": {
+    "typescript": "^5.0.4"
   }
 }

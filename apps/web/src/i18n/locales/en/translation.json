@@ -374,6 +374,7 @@
     "explorer": "Blockchain Explorer",
     "viewOnEtherscan": "View on Etherscan",
     "viewOnExplorer": "View on T1 Explorer",
+    "sendTransaction": "Send Transaction",
     "l1InfoText": "The Sepolia testnet provides a low-cost environment for testing location marketplace features. You can register POIs, subscribe to them, and challenge incorrect ones all on L1.",
     "l2InfoText": "T1 protocol provides a privacy-focused second layer for location verification with TEE integration. Validators can bid to verify POI information while preserving privacy.",
     "privateShareTitle": "Private Sharing",
@@ -456,6 +457,7 @@
     "errorSharingLocation": "Error sharing location. Please try again.",
     "locationShared": "Location shared successfully!",
     "teeProtection": "Protected by TEE Technology",
-    "teeExplanation": "Your private locations are secured by Trusted Execution Environment (TEE) technology, ensuring that even the server operators cannot access your sensitive data."
+    "teeExplanation": "Your private locations are secured by Trusted Execution Environment (TEE) technology, ensuring that even the server operators cannot access your sensitive data.",
+    "errorBidIncreaseTooSmall": "Your bid increase is too small"
   }
 }
