@@ -11,6 +11,8 @@ import { useAuth } from './providers/AuthContext'
 import { ExplorationIndicator } from './components/ExplorationIndicator'
 import { BadgesModal } from './components/BadgesModal'
 import { validateRewardCollection, updateExplorationStats, generateRewardsAroundUser, ExplorationStats } from './utils/RewardSystem'
+import { PrivacyHeatmapLayer } from './components/PrivacyHeatmapLayer'
+import { LocationAnalyticsModal } from './components/LocationAnalyticsModal'
 
 // Create theme context
 export type ThemeMode = 'dark' | 'light';
@@ -44,6 +46,14 @@ function App() {
   })
   const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [hasNewBadges, setHasNewBadges] = useState(false)
+  
+  // New state for privacy features
+  const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false)
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false)
+  const [analyticsLocation, setAnalyticsLocation] = useState<{
+    name: string;
+    coordinates: [number, number];
+  } | null>(null)
   
   // Effect to initialize the map after successful login
   useEffect(() => {
@@ -567,6 +577,26 @@ function App() {
     setShowBadgesModal(false);
   };
 
+  // Handle show location analytics
+  const handleShowLocationAnalytics = (location: {
+    name: string;
+    coordinates: [number, number];
+  }) => {
+    setAnalyticsLocation(location);
+    setShowAnalyticsModal(true);
+  };
+
+  // Handle close location analytics
+  const handleCloseAnalyticsModal = () => {
+    setAnalyticsLocation(null);
+    setShowAnalyticsModal(false);
+  };
+
+  // Handle toggle privacy heatmap
+  const handleTogglePrivacyHeatmap = (isVisible: boolean) => {
+    setShowPrivacyHeatmap(isVisible);
+  };
+
   // Only render the map interface when authenticated
   // Otherwise show the login screen
   return (
@@ -612,6 +642,23 @@ function App() {
               rewards={rewards}
               setRewards={setRewards}
               theme={themeMode}
+              onShowAnalytics={handleShowLocationAnalytics}
+              onTogglePrivacyHeatmap={handleTogglePrivacyHeatmap}
+            />
+          )}
+          
+          {/* Privacy Heatmap Layer */}
+          <PrivacyHeatmapLayer 
+            map={map.current}
+            isVisible={showPrivacyHeatmap}
+          />
+          
+          {/* Location Analytics Modal */}
+          {showAnalyticsModal && analyticsLocation && (
+            <LocationAnalyticsModal
+              locationName={analyticsLocation.name}
+              coordinates={analyticsLocation.coordinates}
+              onClose={handleCloseAnalyticsModal}
             />
           )}
           

@@ -13,6 +13,32 @@
     "nillionLLM": "Nillion LLM",
     "testAPI": "API Test"
   },
+  "privacy": {
+    "enabled": "Privacy Enabled",
+    "disabled": "Privacy Disabled",
+    "encryptedLocation": "Encrypted Location",
+    "encryptedCoordinates": "[Coordinates Encrypted]",
+    "teeId": "TEE ID",
+    "coordinates": "Coordinates",
+    "locationEncryptionNotice": "Your location will be encrypted using asymmetric cryptography (X25519 + ChaCha20-Poly1305) before being sent to the server. Only authorized processes in the TEE can decrypt this data.",
+    "heatmapPrivacyTitle": "Privacy-Preserving Heatmap",
+    "heatmapPrivacyDescription": "This heatmap shows areas of activity without revealing individual GPS data. All analytics are computed within the TEE.",
+    "hotspotAnalytics": "Hotspot Analytics",
+    "visits24h": "Visits (24h)",
+    "uniqueVisitors": "Unique Visitors",
+    "peakHour": "Peak Hour",
+    "isHotspot": "Popular Location",
+    "yes": "Yes",
+    "no": "No",
+    "privacyLevel": "Privacy Level",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "lastUpdated": "Last Updated",
+    "showHeatmap": "Show Privacy Heatmap",
+    "hideHeatmap": "Hide Privacy Heatmap",
+    "heatmapLoading": "Loading privacy-preserving heatmap data..."
+  },
   "teeZone": {
     "title": "Trusted Execution Environment (TEE) Zone",
     "selectFeature": "Select a TEE Feature",
@@ -211,7 +237,9 @@
     "visitProofSuccess": "Visit proof successfully created!",
     "visitProofFailed": "Failed to create visit proof",
     "title": "Map Menu",
-    "mySpots": "My Spots"
+    "mySpots": "My Spots",
+    "viewAnalytics": "View Hotspot Analytics",
+    "showHeatmap": "Show Privacy Heatmap"
   },
   "exploration": {
     "indicator": "Exploration",
@@ -279,5 +307,21 @@
     "title": "OrbitalMap - Discover Hidden Rewards",
     "showRewards": "Show Rewards",
     "hideRewards": "Hide Rewards"
+  },
+  "analytics": {
+    "title": "Location Analytics",
+    "subtitle": "Privacy-Preserved TEE Analytics",
+    "visitsTitle": "Visit Data",
+    "visitsDescription": "All analytics are computed in the Trusted Execution Environment, protecting individual location data.",
+    "hotspotData": "Hotspot Data",
+    "visitorStats": "Visitor Statistics",
+    "timeData": "Time Data",
+    "privacyGuarantee": "Your privacy is guaranteed through TEE technology",
+    "viewHeatmap": "View Privacy Heatmap",
+    "closeAnalytics": "Close Analytics",
+    "fetchingData": "Fetching data from TEE...",
+    "aggregatedData": "Data shown is aggregated and anonymized",
+    "noDataAvailable": "No analytics data available for this location",
+    "hourFormat": "{{hour}}:00 - {{hour}}:59"
   }
 }

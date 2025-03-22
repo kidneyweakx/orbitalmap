@@ -4,6 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import { Reward, generateRewardsAroundLocation } from '../utils/rewardGenerator';
 import { ThemeMode } from '../App';
 import { ZKLocationProofCard } from './ZKLocationProofCard';
+import { encryptLocationData } from '../utils/privacyUtils'; // Import encryption utility
 
 interface Spot {
   id: string;
@@ -13,6 +14,8 @@ interface Spot {
   imageUrl?: string;
   tags: string[]; // Add tags field
   hasVisitProof?: boolean; // New field to track if user has proven visit
+  encryptedId?: string; // Add encrypted ID field
+  isEncrypted: boolean; // Track encryption status
 }
 
 // Available tag options
@@ -25,9 +28,11 @@ interface MapMenuProps {
   rewards: Reward[];
   setRewards: React.Dispatch<React.SetStateAction<Reward[]>>;
   theme: ThemeMode;
+  onShowAnalytics?: (location: { name: string, coordinates: [number, number] }) => void;
+  onTogglePrivacyHeatmap?: (isVisible: boolean) => void;
 }
 
-export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards, setRewards, theme }: MapMenuProps) {
+export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards, setRewards, theme, onShowAnalytics, onTogglePrivacyHeatmap }: MapMenuProps) {
   const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
@@ -48,6 +53,8 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [showZKProofCard, setShowZKProofCard] = useState(false);
+  const [privacyMode, setPrivacyMode] = useState(true); // Default to privacy mode on
+  const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false);
   
   // Effect to handle map clicks
   useEffect(() => {
@@ -77,10 +84,26 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
       try {
         const parsedSpots = JSON.parse(savedSpots);
         
-        // Handle migration of old spots data without tags
-        const updatedSpots = parsedSpots.map((spot: Omit<Spot, 'tags'> & { tags?: string[] }) => {
-          if (!spot.tags) {
-            return { ...spot, tags: ['other'] };
+        // Handle migration of old spots data without encryption fields
+        const updatedSpots = parsedSpots.map((spot: {
+          id: string;
+          name: string;
+          coordinates: [number, number];
+          description?: string;
+          imageUrl?: string;
+          tags?: string[];
+          hasVisitProof?: boolean;
+          encryptedId?: string;
+          isEncrypted?: boolean;
+        }) => {
+          // Add encryption fields if they don't exist
+          if (!Object.prototype.hasOwnProperty.call(spot, 'isEncrypted')) {
+            return { 
+              ...spot, 
+              tags: spot.tags || ['other'],
+              isEncrypted: false,
+              encryptedId: ""
+            };
           }
           return spot;
         });
@@ -128,12 +151,27 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
 
     // Add new markers
     filteredSpots.forEach(spot => {
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-        `<h3>${spot.name}</h3>
+      // Create popup content based on privacy mode
+      const popupContent = `
+        <h3>${spot.name}</h3>
         <p>${spot.description || t('mapMenu.noDescription')}</p>
         <div class="spot-tags-popup">
           ${spot.tags.map(tag => `<span class="spot-tag-badge">${t(`tags.${tag}`)}</span>`).join(' ')}
         </div>
+        ${spot.isEncrypted ? 
+          `<div class="encrypted-location-info">
+            <div class="encrypted-badge">
+              <span class="encrypted-icon">🔒</span> ${t('privacy.encryptedLocation')}
+            </div>
+            <div class="encrypted-id-display">
+              <span class="tee-id-label">${t('privacy.teeId')}:</span>
+              <span class="tee-id-value">${spot.encryptedId?.substring(0, 12)}...${spot.encryptedId?.substring(spot.encryptedId.length - 8)}</span>
+            </div>
+          </div>` : 
+          `<div class="location-coordinates">
+            <span>${t('privacy.coordinates')}: ${spot.coordinates[1].toFixed(6)}, ${spot.coordinates[0].toFixed(6)}</span>
+          </div>`
+        }
         <div class="reward-info-popup">
           <p>${t('mapMenu.rewardsNearby')}: ${countRewardsForSpot(spot.id)}</p>
         </div>
@@ -148,10 +186,14 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
           width: 100%;
         ">
           ${spot.hasVisitProof ? t('mapMenu.viewVisitProof') : t('mapMenu.createVisitProof')}
-        </button>`
-      );
+        </button>`;
+      
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
-      const marker = new mapboxgl.Marker({ color: spot.hasVisitProof ? '#FFD700' : '#0066cc' })
+      // Use gold color for markers with proofs, blue for regular, and purple for encrypted
+      const markerColor = spot.hasVisitProof ? '#FFD700' : (spot.isEncrypted ? '#9c27b0' : '#0066cc');
+      
+      const marker = new mapboxgl.Marker({ color: markerColor })
         .setLngLat(spot.coordinates)
         .setPopup(popup)
         .addTo(map);
@@ -174,7 +216,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     return () => {
       Object.values(markersRef.current).forEach(marker => marker.remove());
     };
-  }, [map, spots, t, i18n.language, rewards, activeTag]);
+  }, [map, spots, t, i18n.language, rewards, activeTag, privacyMode]);
 
   // Count rewards linked to a specific spot
   const countRewardsForSpot = (spotId: string): number => {
@@ -202,13 +244,32 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
-  const handleAddSpot = () => {
+  const handleAddSpot = async () => {
     if (!map || !newSpotName) return;
 
     const spotCoordinates = addSpotPosition || 
       (coordinates ? coordinates : [map.getCenter().lng, map.getCenter().lat]);
-    
+
     const newSpotId = Date.now().toString();
+    
+    // Generate encrypted ID for the spot using privacy utils
+    let encryptedId = "";
+    let isEncrypted = false;
+    
+    if (privacyMode) {
+      try {
+        // Encrypt coordinates for private spots
+        encryptedId = await encryptLocationData(
+          spotCoordinates[1], // latitude
+          spotCoordinates[0], // longitude
+          newSpotId // use spot id as a salt
+        );
+        isEncrypted = true;
+      } catch (error) {
+        console.error("Failed to encrypt location:", error);
+        // Continue without encryption if it fails
+      }
+    }
     
     const newSpot: Spot = {
       id: newSpotId,
@@ -219,7 +280,9 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
       ],
       description: newSpotDescription,
       imageUrl: newSpotImageUrl || 'https://via.placeholder.com/150?text=Spot',
-      tags: newSpotTags
+      tags: newSpotTags,
+      isEncrypted: isEncrypted,
+      encryptedId: encryptedId
     };
 
     setSpots([...spots, newSpot]);
@@ -395,6 +458,11 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
   
+  // Toggle privacy mode for location encryption
+  const handleTogglePrivacyMode = () => {
+    setPrivacyMode(!privacyMode);
+  };
+  
   // Get filtered spots based on active tag
   const filteredSpots = activeTag 
     ? spots.filter(spot => spot.tags.includes(activeTag))
@@ -423,6 +491,14 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
         setShowZKProofCard(false);
         setSelectedSpot(null);
       }, 2000);
+    }
+  };
+
+  const handleToggleHeatmap = () => {
+    const newState = !showPrivacyHeatmap;
+    setShowPrivacyHeatmap(newState);
+    if (onTogglePrivacyHeatmap) {
+      onTogglePrivacyHeatmap(newState);
     }
   };
 
@@ -455,7 +531,26 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             <button className="current-location-btn" onClick={handleGetCurrentLocation}>
               {t('mapMenu.getCurrentLocation')}
             </button>
-            <p className="coordinates-display">{t('mapMenu.coordinates')}: {coordinates ? `${coordinates[0]}, ${coordinates[1]}` : '...'}</p>
+            <p className="coordinates-display">
+              {t('mapMenu.coordinates')}: {coordinates ? `${coordinates[0]}, ${coordinates[1]}` : '...'}
+            </p>
+            <div className="privacy-toggle">
+              <label className="switch">
+                <input 
+                  type="checkbox" 
+                  checked={privacyMode} 
+                  onChange={handleTogglePrivacyMode}
+                />
+                <span className="slider round"></span>
+              </label>
+              <span className="privacy-label">
+                {privacyMode ? (
+                  <span><span className="lock-icon">🔒</span> {t('privacy.enabled')}</span>
+                ) : (
+                  <span><span className="unlock-icon">🔓</span> {t('privacy.disabled')}</span>
+                )}
+              </span>
+            </div>
           </div>
           
           <div className="rewards-info-section">
@@ -472,6 +567,21 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                 <span className="reward-emoji">🍀</span> {t('mapMenu.lowValueReward')}
               </div>
             </div>
+            
+            {onTogglePrivacyHeatmap && (
+              <div className="privacy-heatmap-control">
+                <button 
+                  className={`heatmap-toggle-btn ${showPrivacyHeatmap ? 'active' : ''}`}
+                  onClick={handleToggleHeatmap}
+                >
+                  {showPrivacyHeatmap ? t('privacy.hideHeatmap') : t('privacy.showHeatmap')}
+                </button>
+                <div className="privacy-explanation">
+                  <span className="privacy-icon">🔒</span>
+                  <span>{t('privacy.heatmapPrivacyDescription')}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="spots-section">
@@ -506,6 +616,14 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                   onChange={(e) => setNewSpotDescription(e.target.value)}
                   placeholder={t('mapMenu.spotDescriptionPlaceholder')}
                 />
+                
+                {/* Privacy notice for encrypted spots */}
+                {privacyMode && (
+                  <div className="privacy-notice">
+                    <div className="privacy-icon">🔒</div>
+                    <p>{t('privacy.locationEncryptionNotice')}</p>
+                  </div>
+                )}
                 
                 {/* Tags selection for new spot */}
                 <div className="tags-selection">
@@ -547,7 +665,16 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                 </div>
                 
                 <div className="selected-coordinates">
-                  <p>{t('mapMenu.selectedLocation')}: {addSpotPosition ? `${addSpotPosition[0].toFixed(6)}, ${addSpotPosition[1].toFixed(6)}` : t('mapMenu.noLocationSelected')}</p>
+                  <p>
+                    {t('mapMenu.selectedLocation')}: 
+                    {addSpotPosition ? (
+                      privacyMode ? 
+                        ` ${t('privacy.encryptedCoordinates')}` : 
+                        ` ${addSpotPosition[0].toFixed(6)}, ${addSpotPosition[1].toFixed(6)}`
+                    ) : (
+                      t('mapMenu.noLocationSelected')
+                    )}
+                  </p>
                 </div>
                 
                 <div className="add-spot-buttons">
@@ -562,9 +689,14 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                 <p className="no-spots">{activeTag ? t('mapMenu.noSpotsWithTag') : t('mapMenu.noSpots')}</p>
               ) : (
                 filteredSpots.map(spot => (
-                  <div key={spot.id} className="spot-card">
+                  <div key={spot.id} className={`spot-card ${spot.isEncrypted ? 'encrypted-spot' : ''}`}>
                     <div className="spot-image">
                       <img src={spot.imageUrl} alt={spot.name} />
+                      {spot.isEncrypted && (
+                        <div className="encrypted-badge">
+                          <span className="encrypted-icon">🔒</span>
+                        </div>
+                      )}
                     </div>
                     <div className="spot-content">
                       <h4>{spot.name}</h4>
@@ -574,11 +706,34 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                         ))}
                       </div>
                       <p>{spot.description || t('mapMenu.noDescription')}</p>
+                      
+                      {/* Show encrypted ID or coordinates based on privacy mode */}
+                      {spot.isEncrypted ? (
+                        <div className="encrypted-location-info">
+                          <p className="tee-id">
+                            <span className="tee-id-label">{t('privacy.teeId')}:</span> 
+                            <span className="tee-id-value">{spot.encryptedId?.substring(0, 8)}...{spot.encryptedId?.substring(spot.encryptedId?.length - 6)}</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="coordinates-info">
+                          {t('privacy.coordinates')}: {spot.coordinates[1].toFixed(6)}, {spot.coordinates[0].toFixed(6)}
+                        </p>
+                      )}
+                      
                       <p className="spot-rewards-count">
                         {t('mapMenu.rewardsNearby')}: {countRewardsForSpot(spot.id)}
                       </p>
                       <div className="spot-actions">
                         <button onClick={() => handleSpotClick(spot.coordinates)}>{t('mapMenu.viewOnMap')}</button>
+                        {onShowAnalytics && (
+                          <button 
+                            onClick={() => onShowAnalytics({ name: spot.name, coordinates: spot.coordinates })}
+                            className="analytics-btn"
+                          >
+                            {t('mapMenu.viewAnalytics')}
+                          </button>
+                        )}
                         <button onClick={() => handleDeleteSpot(spot.id)} className="delete-btn">{t('mapMenu.delete')}</button>
                       </div>
                     </div>
