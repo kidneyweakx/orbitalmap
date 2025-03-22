@@ -97,7 +97,15 @@ function App() {
   
   // Function to toggle MapMenu
   const handleToggleMapMenu = () => {
-    setShowMapMenu(!showMapMenu);
+    // 如果已經有選中的位置，關閉菜單並清除選中位置
+    if (clickedPosition && showMapMenu) {
+      setShowMapMenu(false);
+      setClickedPosition(null);
+      cleanupIndicators();
+    } else {
+      // 否則切換菜單狀態
+      setShowMapMenu(!showMapMenu);
+    }
   };
   
   // Debug i18n
@@ -127,16 +135,26 @@ function App() {
     // Add map click event handler
     map.current.on('click', (e) => {
       const { lng, lat } = e.lngLat;
-      setClickedPosition([lng, lat]);
       
-      // Check for nearby rewards at the clicked position
-      if (rewards.length > 0) {
-        const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
-        showNearbyRewardIndicators(nearby);
+      // 如果菜單已經打開且有選中位置，則關閉菜單並清除選中位置
+      if (showMapMenu && clickedPosition) {
+        setShowMapMenu(false);
+        setClickedPosition(null);
+        cleanupIndicators();
+      } else {
+        // 否則設置新的選中位置並打開菜單
+        setClickedPosition([lng, lat]);
+        setShowMapMenu(true);
         
-        // If rewards are nearby, trigger reward validation
-        if (nearby.length > 0) {
-          validateAndCollectReward([lng, lat]);
+        // Check for nearby rewards at the clicked position
+        if (rewards.length > 0) {
+          const nearby = findRewardsNearLocation([lng, lat], rewards, 0.2);
+          showNearbyRewardIndicators(nearby);
+          
+          // If rewards are nearby, trigger reward validation
+          if (nearby.length > 0) {
+            validateAndCollectReward([lng, lat]);
+          }
         }
       }
     });
@@ -625,7 +643,7 @@ function App() {
         handleShowBadgesModal={handleShowBadgesModal}
       />
 
-      {/* Map Menu as left sidebar , if clickedPosition is open click will close*/}
+      {/* Map Menu as left sidebar */}
       <div className={`map-menu-sidebar ${showMapMenu ? 'open' : ''}`}>
         {isAuthenticated && (
           <MapMenu
@@ -667,19 +685,6 @@ function App() {
             </div>
           )}
           
-          {/* Map Menu as left sidebar when clickedPosition open but clickTitle is closed*/}
-          <div className={`map-menu-sidebar ${clickedPosition && !showLocationModal && !showMapMenu ? 'open' : ''}`}>
-            <MapMenu
-              map={map.current}
-              clickedPosition={clickedPosition}
-              onClearClickedPosition={handleClearClickedPosition}
-              rewards={rewards}
-              setRewards={setRewards}
-              theme={themeMode}
-              onShowAnalytics={handleShowLocationAnalytics}
-              onTogglePrivacyHeatmap={handleTogglePrivacyHeatmap}
-            />
-          </div>
           {/* Privacy Heatmap Layer */}
           <PrivacyHeatmapLayer 
             map={map?.current} 
@@ -698,6 +703,7 @@ function App() {
           {/* Exploration indicator */}
           <ExplorationIndicator 
             stats={explorationStats}
+            onShowDetails={handleShowBadgesModal}
             hasBadges={hasNewBadges}
           />
           

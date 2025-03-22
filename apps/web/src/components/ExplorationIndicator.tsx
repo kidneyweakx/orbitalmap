@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 interface ExplorationIndicatorProps {
   stats: ExplorationStats;
   hasBadges: boolean;
+  onShowDetails?: () => void;
 }
 
 export function ExplorationIndicator({ 
   stats, 
-  hasBadges
+  hasBadges,
+  onShowDetails
 }: ExplorationIndicatorProps) {
   const { t } = useTranslation();
   const [animate, setAnimate] = useState(false);
@@ -48,7 +50,7 @@ export function ExplorationIndicator({
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
         transition: 'all 0.3s ease'
       }}
-
+      onClick={onShowDetails}
     >
       <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
         {stats.explorationIndex}%
