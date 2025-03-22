@@ -11,7 +11,7 @@ interface Spot {
   name: string;
   coordinates: [number, number];
   description?: string;
-  imageUrl?: string;
+  emoji: string; // 改成emoji而不是imageUrl
   tags: string[]; // Add tags field
   hasVisitProof?: boolean; // New field to track if user has proven visit
   encryptedId?: string; // Add encrypted ID field
@@ -20,6 +20,16 @@ interface Spot {
 
 // Available tag options
 export const SPOT_TAGS = ['food', 'photo', 'nature', 'shopping', 'culture', 'other'];
+
+// 可用的emoji选项
+export const SPOT_EMOJIS = [
+  '🏞️', '🗻', '🌋', '🏝️', '🏖️', '🏜️', '🌄', '🌅', '🌇', '🌉', '🌆', '🌃',
+  '🏙️', '🌁', '🗼', '🏰', '🏯', '🏛️', '⛩️', '🕌', '🕍', '⛪', '🏢', '🏣',
+  '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🍽️', '🍵', '☕', '🧋', '🥤',
+  '🍵', '🍹', '🍷', '🍸', '🍺', '🏊', '🎭', '🎪', '🎨', '🎬', '🎯', '🎣',
+  '🎮', '⚽', '🏀', '🏈', '⚾', '🥎', '🏐', '🏓', '🎾', '🥾', '🚲', '🏍️',
+  '🚗', '🚉', '✈️', '🚢', '⛵', '🛥️', '🚁', '🚠', '🎡', '🎢', '🎠', '🏔️'
+];
 
 interface MapMenuProps {
   map: mapboxgl.Map | null;
@@ -40,23 +50,23 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
   const [isAddingSpot, setIsAddingSpot] = useState(false);
   const [newSpotName, setNewSpotName] = useState('');
   const [newSpotDescription, setNewSpotDescription] = useState('');
-  const [newSpotImageUrl, setNewSpotImageUrl] = useState('');
+  const [newSpotEmoji, setNewSpotEmoji] = useState('🏞️'); // 默认emoji
   const [newSpotTags, setNewSpotTags] = useState<string[]>(['other']); // Default tag
   const [addSpotPosition, setAddSpotPosition] = useState<[number, number] | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const markersRef = useRef<{ [id: string]: mapboxgl.Marker }>({});
   const tempMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showRewardInfo, setShowRewardInfo] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [showZKProofCard, setShowZKProofCard] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(true); // Default to privacy mode on
   // Keep state variable for when heatmap functionality is restored
-   
   const [showPrivacyHeatmap, setShowPrivacyHeatmap] = useState(false);
+  const [showHeatmapTooltip, setShowHeatmapTooltip] = useState(false);
+  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
+  const [encryptedCoordinateId, setEncryptedCoordinateId] = useState<string>("");
   
   // Effect to handle map clicks
   useEffect(() => {
@@ -93,6 +103,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
           coordinates: [number, number];
           description?: string;
           imageUrl?: string;
+          emoji?: string;
           tags?: string[];
           hasVisitProof?: boolean;
           encryptedId?: string;
@@ -107,6 +118,19 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
               encryptedId: ""
             };
           }
+          
+          // Add emoji field if it doesn't exist or convert imageUrl to emoji
+          if (!Object.prototype.hasOwnProperty.call(spot, 'emoji')) {
+            const randomIndex = Math.floor(Math.random() * SPOT_EMOJIS.length);
+            return {
+              ...spot,
+              emoji: SPOT_EMOJIS[randomIndex], // Use random emoji from list
+              tags: spot.tags || ['other'],
+              isEncrypted: spot.isEncrypted || false,
+              encryptedId: spot.encryptedId || ""
+            };
+          }
+          
           return spot;
         });
         
@@ -281,7 +305,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
         Number(spotCoordinates[1].toFixed(6))
       ],
       description: newSpotDescription,
-      imageUrl: newSpotImageUrl || 'https://via.placeholder.com/150?text=Spot',
+      emoji: newSpotEmoji,
       tags: newSpotTags,
       isEncrypted: isEncrypted,
       encryptedId: encryptedId
@@ -304,7 +328,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     setIsAddingSpot(false);
     setNewSpotName('');
     setNewSpotDescription('');
-    setNewSpotImageUrl('');
+    setNewSpotEmoji('🏞️');
     setNewSpotTags(['other']);
     setAddSpotPosition(null);
     
@@ -320,7 +344,7 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     setIsAddingSpot(false);
     setNewSpotName('');
     setNewSpotDescription('');
-    setNewSpotImageUrl('');
+    setNewSpotEmoji('🏞️');
     setNewSpotTags(['other']);
     setAddSpotPosition(null);
     
@@ -388,52 +412,6 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    setIsUploading(true);
-    
-    try {
-      // For demonstration purposes, we'll use a mock upload instead of an actual ImgBB upload
-      // In a real application, you would use the API key from environment variables
-      // const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
-      
-      // Simulate uploading delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate a temporary local URL for the uploaded image
-      const imageUrl = URL.createObjectURL(file);
-      setNewSpotImageUrl(imageUrl);
-      
-      // In a real application, you would use actual image hosting:
-      /*
-      const formData = new FormData();
-      formData.append('image', file);
-      
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setNewSpotImageUrl(data.data.url);
-      } else {
-        console.error('Upload failed:', data);
-        alert(t('mapMenu.uploadError'));
-      }
-      */
-    } catch (error) {
-      console.error('Error processing image:', error);
-      alert(t('mapMenu.uploadError'));
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   const handleCollectReward = (rewardId: string) => {
     setRewards(prevRewards => prevRewards.map(reward => 
       reward.id === rewardId ? { ...reward, isVisible: false } : reward
@@ -442,22 +420,10 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     setShowRewardInfo(false);
   };
 
+  // Toggle tag selection for adding spot or filtering
   const handleTagToggle = (tag: string) => {
-    if (isAddingSpot) {
-      // If adding a spot, toggle the tag selection
-      setNewSpotTags(prevTags => {
-        if (prevTags.includes(tag)) {
-          // Don't remove if it's the last tag
-          if (prevTags.length === 1) return prevTags;
-          return prevTags.filter(t => t !== tag);
-        } else {
-          return [...prevTags, tag];
-        }
-      });
-    } else {
-      // If browsing, filter the spots by tag
-      setActiveTag(activeTag === tag ? null : tag);
-    }
+    // For browsing, filter the spots by tag
+    setActiveTag(activeTag === tag ? null : tag);
   };
   
   // Toggle privacy mode for location encryption
@@ -505,6 +471,27 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
     }
   };
 
+  // 更新当前位置的加密ID
+  useEffect(() => {
+    if (coordinates && privacyMode) {
+      const updateEncryptedId = async () => {
+        try {
+          const encId = await encryptLocationData(
+            coordinates[1],
+            coordinates[0],
+            "loc-id"
+          );
+          setEncryptedCoordinateId(encId.substring(0, 10) + "...");
+        } catch (error) {
+          console.error("Failed to encrypt coordinates:", error);
+          setEncryptedCoordinateId("[加密错误]");
+        }
+      };
+      
+      updateEncryptedId();
+    }
+  }, [coordinates, privacyMode]);
+
   return (
     <>
       <div className={`map-menu ${theme === 'dark' ? 'dark-theme' : ''} ${isMenuCollapsed ? 'collapsed' : ''}`}>
@@ -525,9 +512,13 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
               {t('mapMenu.getCurrentLocation')}
             </button>
             <p className="coordinates-display">
-              {t('mapMenu.coordinates')}: {coordinates ? `${coordinates[0]}, ${coordinates[1]}` : '...'}
+              {t('mapMenu.coordinates')}: {coordinates && privacyMode ? 
+                `${t('privacy.teeId')}: ${encryptedCoordinateId}` : 
+                coordinates ? `${coordinates[0]}, ${coordinates[1]}` : "..."}
             </p>
-            <div className="privacy-toggle">
+            <div className="privacy-toggle"
+                 onMouseEnter={() => setShowPrivacyTooltip(true)}
+                 onMouseLeave={() => setShowPrivacyTooltip(false)}>
               <label className="switch">
                 <input 
                   type="checkbox" 
@@ -543,6 +534,12 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                   <span><span className="unlock-icon">🔓</span> {t('privacy.disabled')}</span>
                 )}
               </span>
+              
+              {showPrivacyTooltip && privacyMode && (
+                <div className="privacy-tooltip">
+                  <p>{t('privacy.locationEncryptionNotice')}</p>
+                </div>
+              )}
             </div>
           </div>
           
@@ -562,17 +559,25 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
             </div>
             
             {onTogglePrivacyHeatmap && (
-              <div className="privacy-heatmap-control">
+              <div className="privacy-heatmap-card" 
+                   onMouseEnter={() => setShowHeatmapTooltip(true)}
+                   onMouseLeave={() => setShowHeatmapTooltip(false)}>
                 <button 
                   className={`heatmap-toggle-btn ${showPrivacyHeatmap ? 'active' : ''}`}
                   onClick={handleToggleHeatmap}
                 >
+                  <span className="heatmap-icon">🔒</span>
                   {showPrivacyHeatmap ? t('privacy.hideHeatmap') : t('privacy.showHeatmap')}
                 </button>
-                <div className="privacy-explanation">
-                  <span className="privacy-icon">🔒</span>
-                  <span>{t('privacy.heatmapPrivacyDescription')}</span>
-                </div>
+                
+                {showHeatmapTooltip && (
+                  <div className="privacy-tooltip">
+                    <p>
+                      <span className="privacy-icon">🔒</span>
+                      This heatmap shows areas of activity without revealing individual GPS data. All analytics are computed within the TEE.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -585,6 +590,13 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
 
             {/* Tags for filtering */}
             <div className="tags-filter">
+              <button 
+                key="all" 
+                className={`tag-filter-btn ${activeTag === null ? 'active' : ''}`}
+                onClick={() => setActiveTag(null)}
+              >
+                {t('tags.all')}
+              </button>
               {SPOT_TAGS.map(tag => (
                 <button 
                   key={tag} 
@@ -610,51 +622,21 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
                   placeholder={t('mapMenu.spotDescriptionPlaceholder')}
                 />
                 
-                {/* Privacy notice for encrypted spots */}
-                {privacyMode && (
-                  <div className="privacy-notice">
-                    <div className="privacy-icon">🔒</div>
-                    <p>{t('privacy.locationEncryptionNotice')}</p>
-                  </div>
-                )}
-                
-                {/* Tags selection for new spot */}
-                <div className="tags-selection">
-                  <label>{t('mapMenu.selectTags')}:</label>
-                  <div className="tags-options">
-                    {SPOT_TAGS.map(tag => (
+                {/* Emoji selection */}
+                <div className="emoji-selection">
+                  <label>{t('mapMenu.selectEmoji')}:</label>
+                  <div className="emoji-options">
+                    {SPOT_EMOJIS.map(emoji => (
                       <button 
-                        key={tag} 
+                        key={emoji} 
                         type="button"
-                        className={`tag-btn ${newSpotTags.includes(tag) ? 'selected' : ''}`}
-                        onClick={() => handleTagToggle(tag)}
+                        className={`emoji-btn ${newSpotEmoji === emoji ? 'selected' : ''}`}
+                        onClick={() => setNewSpotEmoji(emoji)}
                       >
-                        {t(`tags.${tag}`)}
+                        {emoji}
                       </button>
                     ))}
                   </div>
-                </div>
-                
-                <div className="image-upload-section">
-                  <div className="image-preview">
-                    {newSpotImageUrl && (
-                      <img src={newSpotImageUrl} alt="Preview" />
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <button 
-                    className="upload-image-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? t('mapMenu.uploading') : t('mapMenu.uploadImage')}
-                  </button>
                 </div>
                 
                 <div className="selected-coordinates">
@@ -683,8 +665,8 @@ export function MapMenu({ map, clickedPosition, onClearClickedPosition, rewards,
               ) : (
                 filteredSpots.map(spot => (
                   <div key={spot.id} className={`spot-card ${spot.isEncrypted ? 'encrypted-spot' : ''}`}>
-                    <div className="spot-image">
-                      <img src={spot.imageUrl} alt={spot.name} />
+                    <div className="spot-emoji">
+                      <span className="emoji-display">{spot.emoji}</span>
                       {spot.isEncrypted && (
                         <div className="encrypted-badge">
                           <span className="encrypted-icon">🔒</span>

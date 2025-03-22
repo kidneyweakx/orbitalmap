@@ -3191,3 +3191,432 @@ button:disabled {
 #rewards-tooltip-element {
   z-index: 1001 !important;
 }
+
+/* MapMenu Spot Cards styling */
+.spot-cards {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.spot-card {
+  display: flex;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.dark-theme .spot-card {
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+}
+
+.spot-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.spot-emoji {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e0e0e0;
+}
+
+.dark-theme .spot-emoji {
+  background-color: #3a3a3a;
+}
+
+.emoji-display {
+  font-size: 2.5rem;
+}
+
+.encrypted-spot .spot-emoji {
+  background-color: #e1bee7;
+}
+
+.dark-theme .encrypted-spot .spot-emoji {
+  background-color: #4a148c;
+}
+
+.encrypted-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.spot-content {
+  padding: 10px;
+  flex: 1;
+}
+
+.spot-card h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.spot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.tag-badge {
+  background-color: #e0e0e0;
+  color: #333;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.dark-theme .tag-badge {
+  background-color: #444;
+  color: #eee;
+}
+
+.spot-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spot-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: white;
+}
+
+.spot-actions button:first-child {
+  background-color: #2196f3;
+}
+
+.spot-actions .analytics-btn {
+  background-color: #9c27b0;
+}
+
+.spot-actions .delete-btn {
+  background-color: #f44336;
+}
+
+.encrypted-location-info {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #673ab7;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dark-theme .encrypted-location-info {
+  color: #bb86fc;
+}
+
+.tee-id {
+  margin: 0;
+  font-family: monospace;
+  background-color: rgba(103, 58, 183, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dark-theme .tee-id {
+  background-color: rgba(187, 134, 252, 0.2);
+}
+
+.coordinates-info {
+  font-size: 12px;
+  color: #555;
+  margin: 5px 0;
+  font-family: monospace;
+}
+
+.dark-theme .coordinates-info {
+  color: #aaa;
+}
+
+.no-spots {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin: 20px 0;
+}
+
+.dark-theme .no-spots {
+  color: #999;
+}
+
+/* Emoji Selection */
+.emoji-selection {
+  margin: 15px 0;
+}
+
+.emoji-selection label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.emoji-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.dark-theme .emoji-options {
+  background-color: #333;
+}
+
+.emoji-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dark-theme .emoji-btn {
+  background-color: #444;
+  border-color: #555;
+  color: white;
+}
+
+.emoji-btn:hover {
+  transform: scale(1.1);
+  background-color: #f0f0f0;
+}
+
+.dark-theme .emoji-btn:hover {
+  background-color: #555;
+}
+
+.emoji-btn.selected {
+  background-color: #bbdefb;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+}
+
+.dark-theme .emoji-btn.selected {
+  background-color: #1976d2;
+  border-color: #2196f3;
+}
+
+/* Privacy Heatmap Card Styling */
+.privacy-heatmap-card {
+  margin-top: 15px;
+  position: relative;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dark-theme .privacy-heatmap-card {
+  background-color: #333;
+}
+
+.heatmap-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #9c27b0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.heatmap-toggle-btn:hover {
+  background-color: #7b1fa2;
+}
+
+.heatmap-toggle-btn.active {
+  background-color: #673ab7;
+}
+
+.heatmap-icon {
+  font-size: 1.2em;
+}
+
+.privacy-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  z-index: 100;
+  margin-top: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.privacy-tooltip p {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 0.9em;
+}
+
+.privacy-tooltip .privacy-icon {
+  margin-right: 5px;
+}
+
+/* Privacy Settings */
+.privacy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  position: relative;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #9c27b0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.privacy-label {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lock-icon, .unlock-icon {
+  font-size: 14px;
+}
+
+.privacy-toggle .privacy-tooltip {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  width: 280px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 100;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .privacy-toggle .privacy-tooltip {
+  background-color: rgba(33, 33, 33, 0.95);
+  border: 1px solid #444;
+}
+
+.privacy-toggle .privacy-tooltip p {
+  margin: 0;
+}
+
+.privacy-notice {
+  background-color: rgba(156, 39, 176, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dark-theme .privacy-notice {
+  background-color: rgba(156, 39, 176, 0.2);
+}
+
+.privacy-icon {
+  font-size: 18px;
+}
+
+.privacy-notice p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}

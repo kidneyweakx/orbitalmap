@@ -129,6 +129,7 @@
     "collectReward": "収集",
     "closeReward": "閉じる",
     "selectTags": "カテゴリーを選択",
+    "selectEmoji": "絵文字を選択",
     "nearbyRewardsFound": "近くに {{count}} 件の報酬があります",
     "checkNearbyRewards": "マップ上でホバーして報酬を確認"
   },

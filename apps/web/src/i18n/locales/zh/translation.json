@@ -76,6 +76,7 @@
     "collectReward": "收集",
     "closeReward": "關閉",
     "selectTags": "選擇分類",
+    "selectEmoji": "選擇表情符號",
     "nearbyRewardsFound": "附近有 {{count}} 個獎勵",
     "checkNearbyRewards": "將滑鼠懸停在圖上查看獎勵",
     "filters": "筛选器",

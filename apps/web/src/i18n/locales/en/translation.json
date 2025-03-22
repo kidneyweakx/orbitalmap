@@ -230,6 +230,7 @@
     "collectReward": "Collect",
     "closeReward": "Close",
     "selectTags": "Select categories",
+    "selectEmoji": "Select emoji",
     "nearbyRewardsFound": "{{count}} rewards nearby",
     "checkNearbyRewards": "Hover over the map to see rewards",
     "viewVisitProof": "View Visit Proof",
