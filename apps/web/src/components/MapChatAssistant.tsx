@@ -30,6 +30,9 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [markersRef, setMarkersRef] = useState<{ [id: string]: mapboxgl.Marker }>({});
+  const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isFirstOpen, setIsFirstOpen] = useState(true);
+  const [exploreMode, setExploreMode] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,13 +49,30 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
       Object.values(markersRef).forEach(marker => marker.remove());
     };
   }, [markersRef]);
+  
+  // Show notification dot when chat is closed and there's a new message
+  useEffect(() => {
+    if (messages.length > 0 && !isOpen) {
+      setHasNewMessage(true);
+    }
+  }, [messages, isOpen]);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      setHasNewMessage(false);
+      // Add welcome message on first open
+      if (isFirstOpen && messages.length === 0) {
+        setIsFirstOpen(false);
+      }
+    }
   };
 
-  const handleShortcutClick = (query: string) => {
+  const handleShortcutClick = (query: string, mode?: string) => {
     setInput(query);
+    if (mode) {
+      setExploreMode(mode);
+    }
     handleSubmit(null, query);
   };
 
@@ -96,8 +116,14 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
             east: bounds.getEast(),
             west: bounds.getWest()
           }
-        }
+        },
+        exploreMode: exploreMode
       };
+      
+      // Add analytics for exploration modes
+      if (exploreMode) {
+        console.log(`Explore mode activated: ${exploreMode}`);
+      }
       
       // Make API call to our recommendation endpoint
       const response = await fetch('/api/user/map-interaction', {
@@ -146,6 +172,11 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
     Object.values(markersRef).forEach(marker => marker.remove());
     const newMarkers: { [id: string]: mapboxgl.Marker } = {};
     
+    // Add route visual if needed (for multi-point recommendations)
+    if (points.length > 1 && exploreMode === 'route') {
+      addRouteBetweenPoints(points);
+    }
+    
     // Create new markers
     points.forEach((point, index) => {
       // Create marker element
@@ -164,9 +195,21 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
         emoji = '🏨';
       } else if (point.type.toLowerCase().includes('park')) {
         emoji = '🌳';
+      } else if (point.type.toLowerCase().includes('event')) {
+        emoji = '🎭';
+      } else if (point.type.toLowerCase().includes('hidden')) {
+        emoji = '💎';
       }
       
       el.textContent = emoji;
+      
+      // Add visual indicator for marker number if in route mode
+      if (exploreMode === 'route') {
+        const numberIndicator = document.createElement('div');
+        numberIndicator.className = 'marker-number';
+        numberIndicator.textContent = (index + 1).toString();
+        el.appendChild(numberIndicator);
+      }
       
       // Create popup with content
       const popup = new mapboxgl.Popup({ offset: 25 })
@@ -202,6 +245,48 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
       });
     }
   };
+  
+  // Function to add a visual route between points for route-based recommendations
+  const addRouteBetweenPoints = (points: Recommendation[]) => {
+    if (!map || points.length < 2) return;
+    
+    // Remove existing route
+    if (map.getSource('route-source')) {
+      map.removeLayer('route-line');
+      map.removeSource('route-source');
+    }
+    
+    // Create route coordinates
+    const routeCoordinates = points.map(point => point.coordinates);
+    
+    // Add route source and layer
+    map.addSource('route-source', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: routeCoordinates
+        }
+      }
+    });
+    
+    map.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route-source',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#4338ca',
+        'line-width': 3,
+        'line-dasharray': [0, 2, 1]
+      }
+    });
+  };
 
   return (
     <>
@@ -210,32 +295,49 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
         className={`chat-bubble-button ${isOpen ? 'active' : ''}`}
         onClick={toggleChat}
       >
-        <span role="img" aria-label="chat">💬</span>
+        <div className="chat-bubble-icon">
+          <span role="img" aria-label="chat">💬</span>
+          {hasNewMessage && !isOpen && <div className="chat-notification-dot"></div>}
+        </div>
       </div>
       
       {/* Chat Panel */}
       {isOpen && (
         <div className="chat-panel" ref={chatContainerRef}>
           <div className="chat-header">
-            <h3>{t('mapChat.title', 'Travel Assistant')}</h3>
+            <h3><span className="header-icon">🧭</span> {t('mapChat.title', 'Travel Assistant')}</h3>
             <button className="close-button" onClick={toggleChat}>&times;</button>
           </div>
           
-          {/* Shortcut Buttons */}
+          {/* Enhanced Shortcut Buttons */}
           <div className="shortcut-buttons">
             <button 
-              onClick={() => handleShortcutClick(t('mapChat.travelShortcut', 'Recommend top attractions near me'))}
+              onClick={() => handleShortcutClick(t('mapChat.travelShortcut', 'Recommend top attractions near me'), 'attractions')}
               className="shortcut-button travel"
             >
               <span className="shortcut-icon">🧳</span>
               {t('mapChat.travelButton', 'Travel')}
             </button>
             <button 
-              onClick={() => handleShortcutClick(t('mapChat.foodShortcut', 'Find good restaurants nearby'))}
+              onClick={() => handleShortcutClick(t('mapChat.foodShortcut', 'Find good restaurants nearby'), 'food')}
               className="shortcut-button food"
             >
               <span className="shortcut-icon">🍽️</span>
               {t('mapChat.foodButton', 'Food')}
+            </button>
+            <button 
+              onClick={() => handleShortcutClick('Suggest a perfect day trip itinerary', 'route')}
+              className="shortcut-button explore"
+            >
+              <span className="shortcut-icon">🌟</span>
+              {t('mapChat.exploreButton', 'Explore')}
+            </button>
+            <button 
+              onClick={() => handleShortcutClick('Are there any events or festivals happening now?', 'events')}
+              className="shortcut-button events"
+            >
+              <span className="shortcut-icon">🎭</span>
+              {t('mapChat.eventsButton', 'Events')}
             </button>
           </div>
           
@@ -290,7 +392,7 @@ export function MapChatAssistant({ map, userLocation }: MapChatAssistantProps) {
             >
               {isLoading 
                 ? t('mapChat.processing', '...') 
-                : t('mapChat.send', 'Send')}
+                : <span className="send-icon">➤</span>}
             </button>
           </form>
         </div>

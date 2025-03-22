@@ -14,7 +14,8 @@
     "testAPI": "API 測試",
     "mapMenu": "地图菜单",
     "search": "搜索",
-    "logout": "退出"
+    "logout": "退出",
+    "toolsMenu": "工具與設置"
   },
   "locationModal": {
     "title": "位置選擇",
@@ -219,7 +220,12 @@
     "error": "抱歉，處理您的請求時遇到錯誤。請再試一次。",
     "travelButton": "旅遊",
     "foodButton": "美食",
+    "exploreButton": "探索",
+    "eventsButton": "活動",
     "travelShortcut": "推薦附近的熱門景點",
-    "foodShortcut": "尋找附近好吃的餐廳"
+    "foodShortcut": "尋找附近好吃的餐廳",
+    "routeShortcut": "建議一日旅行行程",
+    "eventsShortcut": "有什麼活動正在進行嗎？",
+    "hiddenGemsShortcut": "顯示附近的隱藏寶藏"
   }
 }

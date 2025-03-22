@@ -11,7 +11,8 @@
     "toolbox": "Toolbox",
     "teeZone": "TEE Zone",
     "nillionLLM": "Nillion LLM",
-    "testAPI": "API Test"
+    "testAPI": "API Test",
+    "toolsMenu": "Tools & Settings"
   },
   "privacy": {
     "enabled": "Privacy Enabled",
@@ -333,7 +334,12 @@
     "error": "Sorry, I encountered an error while processing your request. Please try again.",
     "travelButton": "Travel",
     "foodButton": "Food",
+    "exploreButton": "Explore",
+    "eventsButton": "Events",
     "travelShortcut": "Recommend top attractions near me",
-    "foodShortcut": "Find good restaurants nearby"
+    "foodShortcut": "Find good restaurants nearby",
+    "routeShortcut": "Suggest a perfect day trip itinerary",
+    "eventsShortcut": "Are there any events happening now?",
+    "hiddenGemsShortcut": "Show me hidden gems around here"
   }
 }
