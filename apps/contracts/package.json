@@ -1,0 +1,13 @@
+{
+  "name": "contracts",
+  "module": "index.ts",
+  "private": true,
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@types/bun": "latest",
+    "hardhat": "^2.22.19"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
