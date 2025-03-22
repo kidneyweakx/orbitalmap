@@ -139,54 +139,95 @@ export function L1Card({
     }
   };
 
-  // Render the card in toolbox mode (info only, no interaction)
+  // Render the card in toolbox mode with a more interactive demo
   if (isToolboxMode) {
     return (
       <div className="treasure-box-card-content">
-        <div className="card-header l1-header">
+        <div className="demo-header">
           <button className="back-button" onClick={onBack}>
             ← {t('common.back')}
           </button>
-          <h3>{t('treasureBox.l1CardTitle')}</h3>
-        </div>
-        
-        <div className="network-indicator">
-          <span className="network-dot sepolia"></span>
-          Sepolia
+          <h3 className="demo-title">{t('treasureBox.l1CardTitle')}</h3>
+          <div className="network-badge">Sepolia</div>
         </div>
         
         <div className="card-description">
           <p>{t('treasureBox.l1CardDetailedDescription')}</p>
         </div>
         
-        <div className="function-list">
-          <h4>{t('treasureBox.availableFunctions')}</h4>
-          <ul>
-            <li>registerPOI(...) - {t('treasureBox.registerPOIDesc')}</li>
-            <li>subscribeToPOI(poiId) - {t('treasureBox.subscribeToPOIDesc')}</li>
-            <li>challengePOI(poiId) - {t('treasureBox.challengePOIDesc')}</li>
-            <li>getPOI(poiId) - {t('treasureBox.getPOIDesc')}</li>
-          </ul>
+        {/* Interactive Demo Section for Toolbox Mode */}
+        <div className="demo-section">
+          <div className="poi-demo-item">
+            <h4>Tokyo Tower Premium Access</h4>
+            <div className="poi-details">
+              <span>Price: 0.005 ETH</span>
+              <span>Subscribers: 27</span>
+            </div>
+            <div className="poi-details">
+              <span>Owner: 0x4f2a...c9b3</span>
+              <span>Data: Encrypted</span>
+            </div>
+            <div className="poi-actions">
+              <button className="demo-button primary" onClick={() => alert('Demo mode: You would subscribe to this POI in a real environment.')}>
+                {t('treasureBox.subscribe')}
+              </button>
+            </div>
+          </div>
+          
+          <div className="poi-demo-item">
+            <h4>Shibuya Crossing Insider</h4>
+            <div className="poi-details">
+              <span>Price: 0.01 ETH</span>
+              <span>Subscribers: 42</span>
+            </div>
+            <div className="poi-details">
+              <span>Owner: 0x8e15...a7d4</span>
+              <span>Status: Subscribed</span>
+            </div>
+            <div className="poi-actions">
+              <button className="demo-button" onClick={() => alert('Demo mode: You already subscribed to this POI.')}>
+                {t('treasureBox.subscribed')}
+              </button>
+            </div>
+          </div>
+          
+          <div className="poi-demo-item">
+            <h4>Register Your Own POI</h4>
+            <div className="poi-details">
+              <span>Create and monetize your own Points of Interest</span>
+            </div>
+            <div className="poi-actions">
+              <button className="demo-button primary" onClick={() => alert('Demo mode: You would register a new POI in a real environment.')}>
+                Register POI
+              </button>
+            </div>
+          </div>
         </div>
         
-        <div className="network-info">
-          <h4>{t('treasureBox.networkInfo')}</h4>
-          <p>
-            <strong>{t('treasureBox.network')}:</strong> Sepolia<br />
-            <strong>{t('treasureBox.contractAddress')}:</strong> {CONTRACTS.L1.address}<br />
-            <strong>{t('treasureBox.explorer')}:</strong> 
-            <a 
-              href={`${CONTRACTS.L1.explorerUrl}/address/${CONTRACTS.L1.address}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              {t('treasureBox.viewOnEtherscan')}
-            </a>
-          </p>
-        </div>
-        
-        <div className="treasure-box-info">
-          <p>{t('treasureBox.l1InfoText')}</p>
+        <div className="functions-section">
+          <h3>{t('treasureBox.availableFunctions')}</h3>
+          <div className="function-list">
+            <div className="function-item">registerPOI(...) - {t('treasureBox.registerPOIDesc')}</div>
+            <div className="function-item">subscribeToPOI(poiId) - {t('treasureBox.subscribeToPOIDesc')}</div>
+            <div className="function-item">challengePOI(poiId) - {t('treasureBox.challengePOIDesc')}</div>
+            <div className="function-item">getPOI(poiId) - {t('treasureBox.getPOIDesc')}</div>
+          </div>
+          
+          <div className="network-info">
+            <p>
+              <strong>{t('treasureBox.network')}:</strong> Sepolia<br />
+              <strong>{t('treasureBox.contractAddress')}:</strong> <span className="contract-address">{CONTRACTS.L1.address.substring(0, 8)}...{CONTRACTS.L1.address.substring(36)}</span><br />
+              <strong>{t('treasureBox.explorer')}:</strong> 
+              <a 
+                href={`${CONTRACTS.L1.explorerUrl}/address/${CONTRACTS.L1.address}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="explorer-link"
+              >
+                {t('treasureBox.viewOnEtherscan')}
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     );

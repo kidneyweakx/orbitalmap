@@ -254,16 +254,12 @@ export function L2Card({
   if (isToolboxMode) {
     return (
       <div className="treasure-box-card-content">
-        <div className="card-header l2-header">
+        <div className="demo-header">
           <button className="back-button" onClick={onBack}>
             ← {t('common.back')}
           </button>
-          <h3>{t('treasureBox.l2CardTitle')}</h3>
-        </div>
-        
-        <div className="network-indicator">
-          <span className="network-dot t1"></span>
-          T1 (Ex-Optimism)
+          <h3 className="demo-title">{t('treasureBox.l2CardTitle')}</h3>
+          <div className="network-badge">T1 (Ex-Optimism)</div>
         </div>
         
         <div className="card-description">
@@ -272,95 +268,87 @@ export function L2Card({
         
         {/* Interactive Demo Section for Toolbox Mode */}
         <div className="demo-section">
-          <h4>Interactive Demo</h4>
-          
-          <div className="demo-auction">
-            <div className="demo-auction-item">
-              <h5>Tokyo City Center POI</h5>
-              <div className="auction-info-row">
-                <span>Current bid:</span>
-                <span>0.25 ETH</span>
-              </div>
-              <div className="auction-info-row">
-                <span>Time remaining:</span>
-                <span>2h 15m</span>
-              </div>
-              <div className="auction-info-row">
-                <span>Highest bidder:</span>
-                <span>0x7a21...f8e9</span>
-              </div>
-              
-              <div className="bid-form">
-                <div className="input-group">
-                  <label htmlFor="demoBidAmount">{t('treasureBox.yourBid')}</label>
-                  <div className="bid-input-wrapper">
-                    <input
-                      id="demoBidAmount"
-                      type="number"
-                      step="0.01"
-                      min="0.26"
-                      placeholder="0.26"
-                    />
-                    <span className="currency">ETH</span>
-                  </div>
-                </div>
-                
-                <button className="bid-button" onClick={() => alert('Demo mode: Your bid would be placed in a real environment.')}>
-                  {t('treasureBox.placeBid')}
-                </button>
-              </div>
+          <div className="auction-item">
+            <div className="auction-header">
+              <h4 className="auction-title">Tokyo City Center POI</h4>
+              <div className="auction-timer">2h 15m left</div>
+            </div>
+            <div className="auction-info">
+              <span>Current bid: 0.25 ETH</span>
+              <span>Highest bidder: 0x7a21...f8e9</span>
             </div>
             
-            <div className="demo-auction-item">
-              <h5>Mount Fuji Viewpoint</h5>
-              <div className="auction-info-row">
-                <span>Current bid:</span>
-                <span>0.5 ETH</span>
-              </div>
-              <div className="auction-info-row">
-                <span>Time remaining:</span>
-                <span>Ended</span>
-              </div>
-              <div className="auction-info-row">
-                <span>Winner:</span>
-                <span>0x3b91...c4d2</span>
-              </div>
-              
-              <button className="view-details-button" onClick={() => alert('Demo mode: Auction details would be shown in a real environment.')}>
+            <div className="bid-form">
+              <input
+                type="number"
+                className="bid-input"
+                step="0.01"
+                min="0.26"
+                placeholder="0.26"
+              />
+              <button className="demo-button primary" onClick={() => alert('Demo mode: Your bid would be placed in a real environment.')}>
+                {t('treasureBox.placeBid')}
+              </button>
+            </div>
+          </div>
+          
+          <div className="auction-item">
+            <div className="auction-header">
+              <h4 className="auction-title">Mount Fuji Viewpoint</h4>
+              <div className="auction-timer">Auction ended</div>
+            </div>
+            <div className="auction-info">
+              <span>Final bid: 0.5 ETH</span>
+              <span>Winner: 0x3b91...c4d2</span>
+            </div>
+            <div className="poi-actions">
+              <button className="demo-button" onClick={() => alert('Demo mode: Auction details would be shown in a real environment.')}>
                 View Details
+              </button>
+            </div>
+          </div>
+          
+          <div className="auction-item">
+            <div className="auction-header">
+              <h4 className="auction-title">Kyoto Bamboo Forest</h4>
+              <div className="auction-timer">1d 3h left</div>
+            </div>
+            <div className="auction-info">
+              <span>Current bid: 0.15 ETH</span>
+              <span>Your status: Highest bidder</span>
+            </div>
+            <div className="poi-actions">
+              <button className="demo-button" onClick={() => alert('Demo mode: You are currently winning this auction!')}>
+                You're winning!
               </button>
             </div>
           </div>
         </div>
         
-        <div className="function-list">
-          <h4>{t('treasureBox.availableFunctions')}</h4>
-          <ul>
-            <li>createAuction(poiId, startingBid, duration) - {t('treasureBox.createAuctionDesc')}</li>
-            <li>bid(auctionId, bidAmount) - {t('treasureBox.bidDesc')}</li>
-            <li>claimPOI(auctionId) - {t('treasureBox.claimPOIDesc')}</li>
-            <li>getAuctionData(auctionId) - {t('treasureBox.getAuctionDataDesc')}</li>
-          </ul>
-        </div>
-        
-        <div className="network-info">
-          <h4>{t('treasureBox.networkInfo')}</h4>
-          <p>
-            <strong>{t('treasureBox.network')}:</strong> T1 (Ex-Optimism)<br />
-            <strong>{t('treasureBox.contractAddress')}:</strong> {CONTRACTS.L2.address}<br />
-            <strong>{t('treasureBox.explorer')}:</strong> 
-            <a 
-              href={`${CONTRACTS.L2.explorerUrl}/address/${CONTRACTS.L2.address}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              {t('treasureBox.viewOnExplorer')}
-            </a>
-          </p>
-        </div>
-        
-        <div className="treasure-box-info">
-          <p>{t('treasureBox.l2InfoText')}</p>
+        <div className="functions-section">
+          <h3>{t('treasureBox.availableFunctions')}</h3>
+          <div className="function-list">
+            <div className="function-item">createAuction(poiId, startingBid, duration) - {t('treasureBox.createAuctionDesc')}</div>
+            <div className="function-item">bid(auctionId, bidAmount) - {t('treasureBox.bidDesc')}</div>
+            <div className="function-item">claimPOI(auctionId) - {t('treasureBox.claimPOIDesc')}</div>
+            <div className="function-item">getAuctionData(auctionId) - {t('treasureBox.getAuctionDataDesc')}</div>
+          </div>
+          
+          <div className="network-info">
+            <p>
+              <strong>{t('treasureBox.network')}:</strong> T1 (Ex-Optimism)<br />
+              <strong>{t('treasureBox.contractAddress')}:</strong> <span className="contract-address">{CONTRACTS.L2.address.substring(0, 8)}...{CONTRACTS.L2.address.substring(36)}</span><br />
+              <strong>{t('treasureBox.explorer')}:</strong> 
+              <a 
+                href={`${CONTRACTS.L2.explorerUrl}/address/${CONTRACTS.L2.address}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="explorer-link"
+              >
+                {t('treasureBox.viewOnExplorer')}
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     );
