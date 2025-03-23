@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { L1Card } from './L1Card';
 import { L2Card } from './L2Card';
 import { PrivateShareForm } from './PrivateShareForm';
+import { L1DetailCard } from './L1DetailCard';
+import { L2DetailCard } from './L2DetailCard';
 import { POI } from '../../utils/contractUtils';
 import '../../styles/TreasureBox.css';
 
@@ -11,7 +13,9 @@ enum CardType {
   None = 'none',
   L1 = 'l1',
   L2 = 'l2',
-  PrivateShare = 'private'
+  PrivateShare = 'private',
+  L1Detail = 'l1Detail',
+  L2Detail = 'l2Detail'
 }
 
 interface TreasureBoxProps {
@@ -87,6 +91,24 @@ export function TreasureBox({
             <h4>{t('treasureBox.privateCardName')}</h4>
             <p>{t('treasureBox.privateCardDescription')}</p>
           </div>
+          
+          <div 
+            className="card-option l1-detail-card"
+            onClick={() => setSelectedCard(CardType.L1Detail)}
+          >
+            <div className="option-icon l1-icon">L1+</div>
+            <h4>{t('treasureBox.l1DetailCardName', 'L1 Detail')}</h4>
+            <p>{t('treasureBox.l1DetailCardDescription', 'View your POI details on L1')}</p>
+          </div>
+          
+          <div 
+            className="card-option l2-detail-card"
+            onClick={() => setSelectedCard(CardType.L2Detail)}
+          >
+            <div className="option-icon l2-icon">L2+</div>
+            <h4>{t('treasureBox.l2DetailCardName', 'L2 Detail')}</h4>
+            <p>{t('treasureBox.l2DetailCardDescription', 'View your POI details on L2')}</p>
+          </div>
         </div>
       </div>
     );
@@ -121,6 +143,20 @@ export function TreasureBox({
             onBack={handleBack}
             selectedArea={selectedArea}
             onShareSuccess={handleSuccess}
+            isToolboxMode={isToolboxMode}
+          />
+        );
+      case CardType.L1Detail:
+        return (
+          <L1DetailCard
+            onBack={handleBack}
+            isToolboxMode={isToolboxMode}
+          />
+        );
+      case CardType.L2Detail:
+        return (
+          <L2DetailCard
+            onBack={handleBack}
             isToolboxMode={isToolboxMode}
           />
         );

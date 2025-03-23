@@ -95,6 +95,23 @@
   margin-bottom: 32px;
 }
 
+/* Update grid layout to show 3 cards in first row, 2 in second row */
+@media (min-width: 900px) {
+  .card-options {
+    display: grid;
+    grid-template-areas: 
+      "l1 l2 private" 
+      "l1-detail l2-detail .";
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .l1-card { grid-area: l1; }
+  .l2-card { grid-area: l2; }
+  .private-card { grid-area: private; }
+  .l1-detail-card { grid-area: l1-detail; }
+  .l2-detail-card { grid-area: l2-detail; }
+}
+
 .card-option {
   background-color: #252525;
   border-radius: 12px;
@@ -140,6 +157,51 @@
 .private-icon {
   background: linear-gradient(135deg, #42275a, #734b6d);
   color: white;
+}
+
+/* Detail card icons */
+.l1-detail-card .option-icon {
+  background: linear-gradient(135deg, #2980b9, #3498db);
+  color: white;
+  position: relative;
+}
+
+.l1-detail-card .option-icon::after {
+  content: "+";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #fff;
+  color: #2980b9;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 18px;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.l2-detail-card .option-icon {
+  background: linear-gradient(135deg, #e74c3c, #ff9966);
+  color: white;
+  position: relative;
+}
+
+.l2-detail-card .option-icon::after {
+  content: "+";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #fff;
+  color: #e74c3c;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 18px;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .card-option h4 {
@@ -504,4 +566,269 @@
 
 .explorer-link:hover {
   text-decoration: underline;
+}
+
+/* Detail Card Styles */
+.detail-card-container {
+  padding: 16px;
+  width: 100%;
+}
+
+.detail-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.detail-card-header h3 {
+  margin: 0 0 0 12px;
+  font-size: 1.3rem;
+  flex-grow: 1;
+}
+
+.poi-list-container {
+  margin-top: 16px;
+}
+
+.poi-list-container h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #eee;
+}
+
+.no-pois-message {
+  text-align: center;
+  padding: 32px 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.poi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.poi-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.poi-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.poi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.poi-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.poi-id {
+  font-size: 0.8rem;
+  color: #aaa;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.poi-location {
+  font-size: 0.9rem;
+  color: #bbb;
+  margin-bottom: 8px;
+}
+
+.poi-info {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.poi-order {
+  font-size: 0.85rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #ddd;
+}
+
+.auction-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auction-badge {
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.auction-badge.active {
+  background-color: rgba(39, 174, 96, 0.3);
+  color: #2ecc71;
+}
+
+.auction-badge.inactive {
+  background-color: rgba(192, 57, 43, 0.3);
+  color: #e74c3c;
+}
+
+.highest-bid {
+  font-size: 0.85rem;
+  color: #f39c12;
+  font-weight: bold;
+}
+
+.poi-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-details-btn {
+  background-color: rgba(41, 128, 185, 0.2);
+  color: #3498db;
+  border: 1px solid rgba(41, 128, 185, 0.3);
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-details-btn:hover {
+  background-color: rgba(41, 128, 185, 0.3);
+  color: #5dade2;
+}
+
+.poi-status {
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.poi-status.verified {
+  background-color: rgba(39, 174, 96, 0.3);
+  color: #2ecc71;
+}
+
+.poi-status.unverified {
+  background-color: rgba(192, 57, 43, 0.3);
+  color: #e74c3c;
+}
+
+.poi-detail-content {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.network-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.network-badge {
+  background-color: #3498db;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.chain-id {
+  font-size: 0.85rem;
+  color: #bbb;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.detail-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  color: #eee;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  flex: 0 0 40%;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.detail-value {
+  flex: 0 0 60%;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.explorer-link {
+  background-color: rgba(41, 128, 185, 0.2);
+  color: #3498db;
+  border: 1px solid rgba(41, 128, 185, 0.3);
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.explorer-link:hover {
+  background-color: rgba(41, 128, 185, 0.3);
+  color: #5dade2;
+}
+
+.auction-section {
+  background-color: rgba(243, 156, 18, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
 } 
