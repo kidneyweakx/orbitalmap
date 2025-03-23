@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { POI, CONTRACTS } from '../../utils/contractUtils';
+import { POI } from '../../utils/contractUtils';
 
 // Define POI details type for display
 interface POIDetail extends POI {
@@ -11,10 +11,10 @@ interface POIDetail extends POI {
 
 interface L1DetailCardProps {
   onBack: () => void;
-  isToolboxMode?: boolean;
+  onShowOnMap?: (lat: number, lng: number) => void;
 }
 
-export function L1DetailCard({ onBack }: L1DetailCardProps) {
+export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
   const { t } = useTranslation();
   const { user } = usePrivy();
   const { wallets } = useWallets();
@@ -29,52 +29,29 @@ export function L1DetailCard({ onBack }: L1DetailCardProps) {
     }
   }, [user, wallets]);
 
-  // Fetch user's POIs from L1 contract
+  // Fetch user's POIs directly from the contract
   const fetchUserPOIs = async () => {
     setLoading(true);
     setError(null);
     try {
       const userAddress = user?.wallet?.address;
       if (!userAddress) {
-        throw new Error('No wallet address found');
+        throw new Error(t('treasureBox.errors.noWalletAddress'));
       }
 
-      // Mock data for demonstration
-      // In a real implementation, we would use viem's publicClient to read from the contract
+      // This should call the contract to get real data
+      // Simulating network request delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockPOIs: POIDetail[] = [
-        {
-          id: '1',
-          name: 'Central Park',
-          lat: 40.7829,
-          lng: -73.9654,
-          owner: userAddress,
-          subscriptionPrice: '0.01',
-          requiresSubscription: true,
-          verified: true,
-          chainId: CONTRACTS.L1.chainId,
-          network: 'Sepolia',
-          isAuctionEnabled: false
-        },
-        {
-          id: '2',
-          name: 'Times Square',
-          lat: 40.7580,
-          lng: -73.9855,
-          owner: userAddress,
-          subscriptionPrice: '0.02',
-          requiresSubscription: true,
-          verified: true,
-          chainId: CONTRACTS.L1.chainId,
-          network: 'Sepolia',
-          isAuctionEnabled: false
-        }
-      ];
-
-      setUserPOIs(mockPOIs);
+      
+      // This should be replaced with actual contract calls
+      // But since there's no actual backend/contract connection, keeping empty array for now
+      // In a real application, this would fetch data from the contract
+      const pois: POIDetail[] = [];
+      
+      setUserPOIs(pois);
     } catch (err) {
       console.error('Error fetching POIs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch your POIs');
+      setError(err instanceof Error ? err.message : t('treasureBox.errors.fetchPoiFailure'));
     } finally {
       setLoading(false);
     }
@@ -86,6 +63,14 @@ export function L1DetailCard({ onBack }: L1DetailCardProps) {
 
   const handleCloseDetails = () => {
     setSelectedPOI(null);
+  };
+  
+  // Navigate to coordinates on the map
+  const handleShowOnMap = (lat: number, lng: number) => {
+    if (onShowOnMap) {
+      onShowOnMap(lat, lng);
+      onBack(); // Return to map
+    }
   };
 
   // Render loading state
@@ -162,30 +147,28 @@ export function L1DetailCard({ onBack }: L1DetailCardProps) {
             </div>
             <div className="detail-item">
               <span className="detail-label">{t('treasureBox.requiresSubscription', 'Requires Subscription')}:</span>
-              <span className="detail-value">{selectedPOI.requiresSubscription ? 'Yes' : 'No'}</span>
+              <span className="detail-value">{selectedPOI.requiresSubscription ? t('common.yes') : t('common.no')}</span>
             </div>
             <div className="detail-item">
               <span className="detail-label">{t('treasureBox.verified', 'Verified')}:</span>
-              <span className="detail-value">{selectedPOI.verified ? 'Yes' : 'No'}</span>
+              <span className="detail-value">{selectedPOI.verified ? t('common.yes') : t('common.no')}</span>
             </div>
           </div>
           
           <div className="detail-actions">
-            <a 
-              href={`${CONTRACTS.L1.explorerUrl}/token/${CONTRACTS.L1.address}?a=${selectedPOI.id}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="explorer-link"
+            <button 
+              onClick={() => handleShowOnMap(selectedPOI.lat, selectedPOI.lng)}
+              className="show-on-map-btn"
             >
-              {t('treasureBox.viewOnExplorer', 'View on Explorer')}
-            </a>
+              {t('treasureBox.showOnMap', 'Show on Map')}
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  // Render list of user's POIs
+  // Render list of user's POIs or empty state
   return (
     <div className="detail-card-container">
       <div className="detail-card-header">
@@ -201,11 +184,20 @@ export function L1DetailCard({ onBack }: L1DetailCardProps) {
         {userPOIs.length === 0 ? (
           <div className="no-pois-message">
             <p>{t('treasureBox.noPOIs', 'You don\'t have any POIs on L1 yet.')}</p>
+            <div className="empty-state-actions">
+              <button 
+                className="action-button" 
+                onClick={onBack}
+                style={{ marginTop: '16px' }}
+              >
+                {t('treasureBox.addPOI', 'Add POI')}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="poi-list">
             {userPOIs.map((poi) => (
-              <div key={poi.id} className="poi-item" onClick={() => handleViewDetails(poi)}>
+              <div key={poi.id} className="poi-item">
                 <div className="poi-header">
                   <h4>{poi.name}</h4>
                   <span className="poi-id">ID: {poi.id}</span>
@@ -217,9 +209,20 @@ export function L1DetailCard({ onBack }: L1DetailCardProps) {
                   <span className={`poi-status ${poi.verified ? 'verified' : 'unverified'}`}>
                     {poi.verified ? t('treasureBox.verified', 'Verified') : t('treasureBox.unverified', 'Unverified')}
                   </span>
-                  <button className="view-details-btn">
-                    {t('treasureBox.viewDetails', 'View Details')}
-                  </button>
+                  <div className="poi-actions">
+                    <button 
+                      className="view-details-btn"
+                      onClick={() => handleViewDetails(poi)}
+                    >
+                      {t('treasureBox.viewDetails', 'View Details')}
+                    </button>
+                    <button 
+                      className="show-on-map-btn"
+                      onClick={() => handleShowOnMap(poi.lat, poi.lng)}
+                    >
+                      {t('treasureBox.showOnMap', 'Show on Map')}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

@@ -151,6 +151,7 @@ export function TreasureBox({
           <L1DetailCard
             onBack={handleBack}
             isToolboxMode={isToolboxMode}
+            onShowOnMap={handleShowOnMap}
           />
         );
       case CardType.L2Detail:
@@ -158,10 +159,28 @@ export function TreasureBox({
           <L2DetailCard
             onBack={handleBack}
             isToolboxMode={isToolboxMode}
+            onShowOnMap={handleShowOnMap}
           />
         );
       default:
         return renderCardSelector();
+    }
+  };
+  
+  // Add map navigation functionality
+  const handleShowOnMap = (lat: number, lng: number) => {
+    // Close the treasure box dialog
+    onClose();
+    
+    // Call map navigation, adjust based on actual map implementation
+    // For example, can use global event or call back method
+    const mapInstance = (window as any).mapInstance;
+    if (mapInstance && typeof mapInstance.flyTo === 'function') {
+      mapInstance.flyTo({ center: [lng, lat], zoom: 15 });
+    } else {
+      // If no direct access to map instance, can use event dispatch
+      const event = new CustomEvent('map:flyto', { detail: { lat, lng } });
+      window.dispatchEvent(event);
     }
   };
   

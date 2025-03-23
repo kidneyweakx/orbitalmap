@@ -831,4 +831,30 @@
   border-radius: 8px;
   padding: 12px;
   margin-top: 16px;
+}
+
+.show-on-map-btn {
+  background-color: rgba(39, 174, 96, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(39, 174, 96, 0.3);
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.show-on-map-btn:hover {
+  background-color: rgba(39, 174, 96, 0.3);
+  color: #7dcea0;
+}
+
+.poi-actions {
+  display: flex;
+  align-items: center;
+}
+
+.empty-state-actions {
+  text-align: center;
 } 
