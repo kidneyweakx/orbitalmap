@@ -42,7 +42,6 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
   const [isBidding, setIsBidding] = useState<boolean>(false);
   const [bidSuccess, setBidSuccess] = useState<boolean>(false);
   const [crossChainFillSuccess, setCrossChainFillSuccess] = useState<boolean>(false);
-  const [fillingCrossChain] = useState<boolean>(false);
 
   // Define T1 chain configuration
   const t1Chain: Chain = {
@@ -531,22 +530,17 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
                     <ContractFunctionButton
                       contractFunction="fill"
                       functionArgs={[
-                        `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`, // Mock orderId
-                        `0x${selectedPOI.linkedL1Id?.padStart(64, '0') || ''}`, // originData with linked L1 POI ID
-                        "0x" // Empty filler data
+                        `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`, // Mock orderId since selectedPOI.crossChainOrderId is undefined
+                        "0x", // Empty origin data
+                        "0x00" // Empty filler data
                       ]}
-                      networkId={299792} // T1 network ID
-                      buttonText={fillingCrossChain ? 
-                        t('treasureBox.fillingCrossChain', 'Filling Cross-Chain Order...') : 
-                        t('treasureBox.fillCrossChain', 'Fill Cross-Chain Order (IDestinationSettler)')
-                      }
-                      className={`cross-chain-btn ${fillingCrossChain ? 'disabled' : ''}`}
+                      networkId={299792} // T1 Chain ID
+                      buttonText={t('treasureBox.fillCrossChain', 'Fill Cross-Chain Order (IDestinationSettler)')}
+                      className="cross-chain-btn"
                       onSuccess={() => {
-                        // Update the selected POI with cross-chain order details
-                        const orderId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+                        // Update the selected POI with filled status
                         const updatedPOI = {
                           ...selectedPOI,
-                          crossChainOrderId: orderId,
                           crossChainStatus: 'filled' as const,
                         };
                         

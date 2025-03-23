@@ -6,6 +6,8 @@ import { Address, createWalletClient, custom, formatUnits, formatEther, createPu
 import { sepolia } from 'viem/chains';
 import L1POIMarketplaceABI from '../../abi/L1POIMarketplace.json';
 import { ContractFunctionButton } from './ContractFunctionButton';
+import { openCrossChainOrder } from '../../utils/contractUtils';
+import './TreasureBox.css';
 
 // Define POI details type for display
 interface POIDetail extends POI {
@@ -36,7 +38,6 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
   const [selectedPOI, setSelectedPOI] = useState<POIDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [crossChainSuccess, setCrossChainSuccess] = useState<boolean>(false);
-  const [initiatingCrossChain] = useState<boolean>(false);
 
   useEffect(() => {
     if (user && wallets.length > 0) {
@@ -271,6 +272,52 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
     }
   };
 
+  const handleInitiateCrossChain = async (poi: POIDetail) => {
+    try {
+      console.log("Initiating cross-chain verification for POI:", poi);
+      
+      // Set loading state
+      setCrossChainSuccess(true);
+      
+      // Create deadline 24 hours from now (in seconds)
+      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      
+      // Get wallet provider
+      const walletProvider = (window as any).ethereum;
+      
+      // Call the openCrossChainOrder function
+      const result = await openCrossChainOrder(walletProvider, {
+        fillDeadline: deadline,
+        // Fix: Properly pad orderDataType to bytes32 (32 bytes = 64 hex chars after 0x)
+        orderDataType: "0x504f495665726966696361000000000000000000000000000000000000000000", // "POIVerifica" padded to bytes32
+        orderData: `0x${poi.id.toString(16).padStart(64, '0')}` // Encode POI ID as bytes
+      });
+      
+      if (result.success) {
+        console.log("Cross-chain verification initiated successfully:", result);
+        // Update the POI with cross-chain information
+        const updatedPOIs = userPOIs.map(p => {
+          if (p.id === poi.id) {
+            return {
+              ...p,
+              crossChainOrderId: result.orderId,
+              crossChainStatus: "pending"
+            };
+          }
+          return p;
+        });
+        setUserPOIs(updatedPOIs);
+        setCrossChainSuccess(true);
+      } else {
+        console.error("Failed to initiate cross-chain verification:", result.error);
+      }
+    } catch (error) {
+      console.error("Error initiating cross-chain verification:", error);
+    } finally {
+      setCrossChainSuccess(false);
+    }
+  };
+
   // Render loading state
   if (loading) {
     return (
@@ -425,15 +472,12 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
                       contractFunction="open"
                       functionArgs={[{
                         fillDeadline: Math.floor(Date.now() / 1000) + 86400, // 24 hours from now
-                        orderDataType: "0x504f495665726966696361", // "POIVerifica" in hex
+                        orderDataType: "0x504f495665726966696361000000000000000000000000000000000000000000", // "POIVerifica" in hex, properly padded to bytes32
                         orderData: `0x${selectedPOI.id.padStart(64, '0')}` // POI ID as bytes
                       }]}
                       networkId={11155111} // Sepolia
-                      buttonText={initiatingCrossChain ? 
-                        t('treasureBox.initiatingCrossChain', 'Initiating Cross-Chain...') : 
-                        t('treasureBox.initiateCrossChain', 'Initiate Cross-Chain Verification (IERC7683)')
-                      }
-                      className={`cross-chain-btn ${initiatingCrossChain ? 'disabled' : ''}`}
+                      buttonText={t('treasureBox.initiateCrossChain', 'Initiate Cross-Chain Verification (IERC7683)')}
+                      className="cross-chain-btn"
                       onSuccess={() => {
                         // Update the selected POI with cross-chain order details
                         const orderId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;

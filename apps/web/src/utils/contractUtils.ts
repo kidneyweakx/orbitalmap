@@ -710,4 +710,206 @@ export async function getPOIsInArea(
     console.error('Error fetching POIs:', error);
     return [];
   }
+}
+
+// ERC-7683 open function implementation
+export async function openCrossChainOrder(
+  walletProvider: EthereumProvider,
+  orderData: { 
+    fillDeadline: number; 
+    orderDataType: string; 
+    orderData: string 
+  },
+  gasParams?: GasParameters
+): Promise<{ success: boolean; orderId?: string; txHash?: string; error?: string }> {
+  try {
+    console.log('Opening ERC-7683 cross-chain order with data:', orderData);
+    
+    // Create wallet client from provider
+    const client = createWalletClient({
+      chain: sepolia,
+      transport: custom(walletProvider)
+    });
+    
+    // Get the account address
+    const [account] = await client.getAddresses();
+    
+    // Contract address
+    const contractAddress = CONTRACTS.L1.address;
+    
+    // Convert orderDataType to bytes32 properly
+    // Ensure it's always a proper bytes32 value
+    const orderDataTypeHex = orderData.orderDataType;
+    console.log('Original orderDataType:', orderDataTypeHex);
+    
+    // Define the ABI type and create ABI item for the open function
+    const openFunctionAbi = [
+      {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "uint32",
+                "name": "fillDeadline",
+                "type": "uint32"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "orderDataType",
+                "type": "bytes32"
+              },
+              {
+                "internalType": "bytes",
+                "name": "orderData",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct IERC7683.OnchainCrossChainOrder",
+            "name": "order",
+            "type": "tuple"
+          }
+        ],
+        "name": "open",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ] as const;
+    
+    // Prepare transaction parameters with proper types
+    const txParams = {
+      account,
+      address: contractAddress as `0x${string}`,
+      abi: openFunctionAbi,
+      functionName: 'open' as const,
+      args: [
+        [
+          orderData.fillDeadline,
+          orderDataTypeHex,
+          orderData.orderData
+        ]
+      ],
+      ...(gasParams?.gas ? { gas: gasParams.gas } : {}),
+      ...(gasParams?.maxFeePerGas ? { maxFeePerGas: gasParams.maxFeePerGas } : {}),
+      ...(gasParams?.maxPriorityFeePerGas ? { maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas } : {})
+    };
+    
+    // Send the transaction
+    const txHash = await client.writeContract(txParams);
+    console.log('ERC-7683 open transaction hash:', txHash);
+    
+    // Generate a mock order ID for demo purposes
+    const mockOrderId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    
+    return {
+      success: true,
+      txHash: txHash,
+      orderId: mockOrderId
+    };
+  } catch (error) {
+    console.error('Error in openCrossChainOrder:', error);
+    return handleContractError(error);
+  }
+}
+
+// IDestinationSettler fill function implementation
+export async function fillCrossChainOrder(
+  walletProvider: EthereumProvider,
+  orderId: string,
+  originData: string,
+  fillerData: string,
+  gasParams?: GasParameters
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log('Filling cross-chain order with ID:', orderId);
+    
+    // Validate input parameters
+    if (!orderId) {
+      return {
+        success: false,
+        error: 'Invalid order ID: Order ID is required'
+      };
+    }
+    
+    // Ensure originData and fillerData are valid strings
+    const safeOriginData = originData || "0x";
+    const safeFillerData = fillerData || "0x";
+    
+    // Create wallet client from provider
+    const client = createWalletClient({
+      chain: {
+        id: 299792, // T1 chain ID
+        name: "T1",
+        nativeCurrency: {
+          decimals: 18,
+          name: "T1 Ether",
+          symbol: "ETH",
+        },
+        rpcUrls: {
+          default: { http: ["https://rpc.v006.t1protocol.com"] },
+          public: { http: ["https://rpc.v006.t1protocol.com"] },
+        },
+      },
+      transport: custom(walletProvider)
+    });
+    
+    // Get the account address
+    const [account] = await client.getAddresses();
+    
+    // Contract address
+    const contractAddress = CONTRACTS.L2.address;
+    
+    // Prepare transaction parameters with type safety
+    const fillFunctionAbi = [
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "orderId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "originData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "fillerData",
+            "type": "bytes"
+          }
+        ],
+        "name": "fill",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ] as const;
+    
+    const txParams = {
+      account,
+      address: contractAddress as `0x${string}`,
+      abi: fillFunctionAbi,
+      functionName: 'fill' as const,
+      args: [orderId, safeOriginData, safeFillerData]
+    };
+    
+    // Add gas parameters if provided
+    const finalTxParams = {
+      ...txParams,
+      ...(gasParams?.gas ? { gas: gasParams.gas } : {})
+    };
+    
+    // Send the transaction
+    const txHash = await client.writeContract(finalTxParams);
+    console.log('IDestinationSettler fill transaction hash:', txHash);
+    
+    return {
+      success: true,
+      txHash: txHash
+    };
+  } catch (error) {
+    console.error('Error in fillCrossChainOrder:', error);
+    return handleContractError(error);
+  }
 } 

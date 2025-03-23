@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { subscribeToPOI, registerPOI, bidOnPOI, GasParameters } from '../../utils/contractUtils';
+import { 
+  subscribeToPOI, 
+  registerPOI, 
+  bidOnPOI, 
+  openCrossChainOrder, 
+  fillCrossChainOrder, 
+  GasParameters 
+} from '../../utils/contractUtils';
 import { parseEther } from 'viem';
 
 // 定义不同合约函数的参数类型
@@ -147,6 +154,7 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
       console.log(`Calling contract function: ${contractFunction} with args:`, functionArgs);
       
       const registerArgs = functionArgs as RegisterPOIArgs;
+      const fillArgs = functionArgs as FillCrossChainArgs;
       
       switch (contractFunction) {
         case 'subscribeToPOI':
@@ -174,16 +182,24 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
           );
           break;
         case 'open':
-          // Simulate ERC-7683 open function call
-          console.log('Simulating ERC-7683 open function call with args:', functionArgs);
-          // In a real implementation, this would call the actual contract function
-          result = { success: true, data: 'Simulated ERC-7683 open function call' };
+          // Call ERC-7683 open function
+          console.log('Calling ERC-7683 open function with args:', functionArgs);
+          result = await openCrossChainOrder(
+            provider,
+            (functionArgs as OpenCrossChainArgs)[0],
+            gasParams
+          );
           break;
         case 'fill':
-          // Simulate IDestinationSettler fill function call
-          console.log('Simulating IDestinationSettler fill function call with args:', functionArgs);
-          // In a real implementation, this would call the actual contract function
-          result = { success: true, data: 'Simulated IDestinationSettler fill function call' };
+          // Call IDestinationSettler fill function
+          console.log('Calling IDestinationSettler fill function with args:', functionArgs);
+          result = await fillCrossChainOrder(
+            provider,
+            fillArgs[0], // orderId
+            fillArgs[1], // originData
+            fillArgs[2], // fillerData
+            gasParams
+          );
           break;
         default:
           throw new Error(`Unsupported contract function: ${contractFunction}`);
