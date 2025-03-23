@@ -128,6 +128,66 @@ cd apps/contracts
 bun run deploy:all
 ```
 
+## Architechure
+```mermaid
+graph TD
+    subgraph "User Interface"
+        Web["apps/web<br>React + MapBox GL"]
+    end
+
+    subgraph "Backend Services"
+        Serverless["apps/serverless<br>Cloudflare Workers"]
+    end
+
+    subgraph "Privacy Technologies"
+        ZKNoir["apps/zk_noir<br>Zero-Knowledge Proofs"]
+        TEE["apps/tee-rewards<br>Marlin TEE"]
+    end
+
+    subgraph "Blockchain Layer"
+        L1["L1 Smart Contract<br>Sepolia<br>(POI Marketplace)"]
+        L2["L2 Smart Contract<br>T1<br>(Validator Auction)"]
+        Contracts["apps/contracts<br>ERC-7683 Implementation"]
+    end
+
+    subgraph "Rewards"
+        OysterRewards["apps/oyster-rewards<br>Reward Management"]
+    end
+
+    %% Connections
+    Web -->|User Interaction| Serverless
+    Web -->|Web3 Connection| L1
+    Web -->|Web3 Connection| L2
+    
+    Serverless -->|API Requests| TEE
+    Serverless -->|Generate Proofs| ZKNoir
+    
+    TEE -->|Secure Processing| OysterRewards
+    TEE -->|Verification Results| Serverless
+    
+    ZKNoir -->|Privacy-Preserving Proofs| Serverless
+    
+    Contracts -->|Deploy| L1
+    Contracts -->|Deploy| L2
+    
+    L1 <-->|ERC-7683 Cross-Chain| L2
+    
+    OysterRewards -->|Distribution| Serverless
+
+    %% Data Flow
+    classDef frontend fill:#f9d5e5,stroke:#333,stroke-width:1px;
+    classDef backend fill:#eeeeee,stroke:#333,stroke-width:1px;
+    classDef privacy fill:#c3e5e7,stroke:#333,stroke-width:1px;
+    classDef blockchain fill:#d5f5e3,stroke:#333,stroke-width:1px;
+    classDef rewards fill:#fdebd0,stroke:#333,stroke-width:1px;
+    
+    class Web frontend;
+    class Serverless backend;
+    class ZKNoir,TEE privacy;
+    class L1,L2,Contracts blockchain;
+    class OysterRewards rewards;
+```
+
 ## License
 
 This project is licensed under the LGPL LICENSE
