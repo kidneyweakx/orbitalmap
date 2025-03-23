@@ -795,7 +795,7 @@ export async function openCrossChainOrder(
     };
     
     // Send the transaction
-    const txHash = await client.writeContract(txParams);
+    const txHash = await client.writeContract(txParams as any);
     console.log('ERC-7683 open transaction hash:', txHash);
     
     // Generate a mock order ID for demo purposes
@@ -901,7 +901,7 @@ export async function fillCrossChainOrder(
     };
     
     // Send the transaction
-    const txHash = await client.writeContract(finalTxParams);
+    const txHash = await client.writeContract(finalTxParams as any);
     console.log('IDestinationSettler fill transaction hash:', txHash);
     
     return {

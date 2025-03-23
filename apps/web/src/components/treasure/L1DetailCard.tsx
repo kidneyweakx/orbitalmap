@@ -6,7 +6,6 @@ import { Address, createWalletClient, custom, formatUnits, formatEther, createPu
 import { sepolia } from 'viem/chains';
 import L1POIMarketplaceABI from '../../abi/L1POIMarketplace.json';
 import { ContractFunctionButton } from './ContractFunctionButton';
-import { openCrossChainOrder } from '../../utils/contractUtils';
 import './TreasureBox.css';
 
 // Define POI details type for display
@@ -272,51 +271,51 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
     }
   };
 
-  const handleInitiateCrossChain = async (poi: POIDetail) => {
-    try {
-      console.log("Initiating cross-chain verification for POI:", poi);
+  // const handleInitiateCrossChain = async (poi: POIDetail) => {
+  //   try {
+  //     console.log("Initiating cross-chain verification for POI:", poi);
       
-      // Set loading state
-      setCrossChainSuccess(true);
+  //     // Set loading state
+  //     setCrossChainSuccess(true);
       
-      // Create deadline 24 hours from now (in seconds)
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+  //     // Create deadline 24 hours from now (in seconds)
+  //     const deadline = Math.floor(Date.now() / 1000) + 86400;
       
-      // Get wallet provider
-      const walletProvider = (window as any).ethereum;
+  //     // Get wallet provider
+  //     const walletProvider = (window as any).ethereum;
       
-      // Call the openCrossChainOrder function
-      const result = await openCrossChainOrder(walletProvider, {
-        fillDeadline: deadline,
-        // Fix: Properly pad orderDataType to bytes32 (32 bytes = 64 hex chars after 0x)
-        orderDataType: "0x504f495665726966696361000000000000000000000000000000000000000000", // "POIVerifica" padded to bytes32
-        orderData: `0x${poi.id.toString(16).padStart(64, '0')}` // Encode POI ID as bytes
-      });
+  //     // Call the openCrossChainOrder function
+  //     const result = await openCrossChainOrder(walletProvider, {
+  //       fillDeadline: deadline,
+  //       // Fix: Properly pad orderDataType to bytes32 (32 bytes = 64 hex chars after 0x)
+  //       orderDataType: "0x504f495665726966696361000000000000000000000000000000000000000000", // "POIVerifica" padded to bytes32
+  //       orderData: `0x${poi.id.toString(16).padStart(64, '0')}` // Encode POI ID as bytes
+  //     });
       
-      if (result.success) {
-        console.log("Cross-chain verification initiated successfully:", result);
-        // Update the POI with cross-chain information
-        const updatedPOIs = userPOIs.map(p => {
-          if (p.id === poi.id) {
-            return {
-              ...p,
-              crossChainOrderId: result.orderId,
-              crossChainStatus: "pending"
-            };
-          }
-          return p;
-        });
-        setUserPOIs(updatedPOIs);
-        setCrossChainSuccess(true);
-      } else {
-        console.error("Failed to initiate cross-chain verification:", result.error);
-      }
-    } catch (error) {
-      console.error("Error initiating cross-chain verification:", error);
-    } finally {
-      setCrossChainSuccess(false);
-    }
-  };
+  //     if (result.success) {
+  //       console.log("Cross-chain verification initiated successfully:", result);
+  //       // Update the POI with cross-chain information
+  //       const updatedPOIs = userPOIs.map(p => {
+  //         if (p.id === poi.id) {
+  //           return {
+  //             ...p,
+  //             crossChainOrderId: result.orderId,
+  //             crossChainStatus: "pending"
+  //           };
+  //         }
+  //         return p;
+  //       });
+  //       setUserPOIs(updatedPOIs);
+  //       setCrossChainSuccess(true);
+  //     } else {
+  //       console.error("Failed to initiate cross-chain verification:", result.error);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error initiating cross-chain verification:", error);
+  //   } finally {
+  //     setCrossChainSuccess(false);
+  //   }
+  // };
 
   // Render loading state
   if (loading) {
