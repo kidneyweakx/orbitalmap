@@ -708,96 +708,98 @@ export function TEEZone({ onClose }: TEEZoneProps) {
   );
 
   return (
-    <div className="tee-zone-modal">
-      <div className="modal-header">
-        <h2>🔒 {t('teeZone.title')}</h2>
-        <button className="close-button" onClick={onClose}>
-          ×
-        </button>
-      </div>
-
-      <div className="modal-content">
-        {!selectedProvider ? (
-          // 首先選擇TEE供應商
-          renderProviderSelection()
-        ) : !selectedFeature ? (
-          // 然後選擇功能
-          <div className="tee-features">
-            <h3>{t('teeZone.selectFeature')}</h3>
-            <div className="tee-feature-grid">
-              <button
-                className="tee-feature-button"
-                onClick={() => setSelectedFeature(TEEFeature.LOCATION_REGISTRATION)}
-              >
-                <span className="emoji">📍</span>
-                <span>{t('teeZone.locationRegistration')}</span>
-              </button>
-              <button
-                className="tee-feature-button"
-                onClick={() => setSelectedFeature(TEEFeature.LOCATION_LOOKUP)}
-              >
-                <span className="emoji">🔍</span>
-                <span>{t('teeZone.locationLookup')}</span>
-              </button>
-              <button
-                className="tee-feature-button"
-                onClick={() => setSelectedFeature(TEEFeature.HEATMAP)}
-              >
-                <span className="emoji">🔥</span>
-                <span>{t('teeZone.heatmap')}</span>
-              </button>
-              <button
-                className="tee-feature-button"
-                onClick={() => setSelectedFeature(TEEFeature.VISIT_ANALYTICS)}
-              >
-                <span className="emoji">📊</span>
-                <span>{t('teeZone.visitAnalytics')}</span>
-              </button>
-            </div>
-            <div className="provider-info">
-              <p>
-                <span className="provider-label">
-                  {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
-                </span>
-                <button className="change-provider-button" onClick={resetState}>
-                  Change Provider
+    <div className="treasure-box-container">
+      <div className="treasure-box-overlay" onClick={onClose}></div>
+      
+      <div className="treasure-box-content">
+        <div className="treasure-box-header">
+          <h2>{t('teeZone.title')}</h2>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="treasure-box-body">
+          {!selectedProvider ? (
+            // 首先選擇TEE供應商
+            renderProviderSelection()
+          ) : !selectedFeature ? (
+            // 然後選擇功能
+            <div className="tee-features">
+              <h3>{t('teeZone.selectFeature')}</h3>
+              <div className="tee-feature-grid">
+                <button
+                  className="tee-feature-button"
+                  onClick={() => setSelectedFeature(TEEFeature.LOCATION_REGISTRATION)}
+                >
+                  <span className="emoji">📍</span>
+                  <span>{t('teeZone.locationRegistration')}</span>
                 </button>
-              </p>
-              <p className="provider-endpoint">
-                API Endpoint: <code>{getApiEndpoint()}</code>
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="tee-form-container">
-            <div className="form-header">
-              <h3>
-                {t(`teeZone.${selectedFeature}Title`)}
-                <button className="back-button" onClick={resetState}>
-                  ↩ {t('teeZone.back')}
+                <button
+                  className="tee-feature-button"
+                  onClick={() => setSelectedFeature(TEEFeature.LOCATION_LOOKUP)}
+                >
+                  <span className="emoji">🔍</span>
+                  <span>{t('teeZone.locationLookup')}</span>
                 </button>
-              </h3>
-              <div className="provider-indicator">
-                <span className="provider-label">
-                  {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
-                </span>
+                <button
+                  className="tee-feature-button"
+                  onClick={() => setSelectedFeature(TEEFeature.HEATMAP)}
+                >
+                  <span className="emoji">🔥</span>
+                  <span>{t('teeZone.heatmap')}</span>
+                </button>
+                <button
+                  className="tee-feature-button"
+                  onClick={() => setSelectedFeature(TEEFeature.VISIT_ANALYTICS)}
+                >
+                  <span className="emoji">📊</span>
+                  <span>{t('teeZone.visitAnalytics')}</span>
+                </button>
+              </div>
+              <div className="provider-info">
+                <p>
+                  <span className="provider-label">
+                    {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
+                  </span>
+                  <button className="change-provider-button" onClick={resetState}>
+                    Change Provider
+                  </button>
+                </p>
+                <p className="provider-endpoint">
+                  API Endpoint: <code>{getApiEndpoint()}</code>
+                </p>
               </div>
             </div>
-            
-            {selectedFeature === TEEFeature.LOCATION_REGISTRATION && renderRegistrationForm()}
-            {selectedFeature === TEEFeature.LOCATION_LOOKUP && renderLookupForm()}
-            {selectedFeature === TEEFeature.HEATMAP && renderHeatmapForm()}
-            {selectedFeature === TEEFeature.VISIT_ANALYTICS && renderVisitAnalyticsForm()}
-            
-            {error && (
-              <div className="error-message">
-                {error}
+          ) : (
+            <div className="tee-form-container">
+              <div className="form-header">
+                <h3>
+                  {t(`teeZone.${selectedFeature}Title`)}
+                  <button className="back-button" onClick={resetState}>
+                    ↩ {t('teeZone.back')}
+                  </button>
+                </h3>
+                <div className="provider-indicator">
+                  <span className="provider-label">
+                    {selectedProvider === TEEProvider.MARLIN ? 'Marlin Oyster' : 'Enarx (Local)'}
+                  </span>
+                </div>
               </div>
-            )}
-            
-            {renderResult()}
-          </div>
-        )}
+              
+              {selectedFeature === TEEFeature.LOCATION_REGISTRATION && renderRegistrationForm()}
+              {selectedFeature === TEEFeature.LOCATION_LOOKUP && renderLookupForm()}
+              {selectedFeature === TEEFeature.HEATMAP && renderHeatmapForm()}
+              {selectedFeature === TEEFeature.VISIT_ANALYTICS && renderVisitAnalyticsForm()}
+              
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
+              
+              {renderResult()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

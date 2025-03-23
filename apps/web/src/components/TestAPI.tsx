@@ -12,10 +12,42 @@ enum APIEndpoint {
   RewardValidation = 'rewardValidation'
 }
 
+interface TravelRecommendationActivity {
+  time: string;
+  activity: string;
+  location: [number, number];
+}
+
+interface TravelRecommendationDay {
+  day: number;
+  activities: TravelRecommendationActivity[];
+}
+
+interface Place {
+  name: string;
+  type?: string;
+  coordinates: [number, number];
+  rating?: number;
+  distance?: string;
+}
+
+interface APIResponse {
+  status: 'success' | 'error';
+  message?: string;
+  recommendations?: TravelRecommendationDay[];
+  places?: Place[];
+  validation?: {
+    isValid: boolean;
+    rewardValue?: number;
+    rewardType?: string;
+    message?: string;
+  };
+}
+
 export function TestAPI({ onClose }: TestAPIProps) {
   const { t } = useTranslation();
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null);
-  const [responseData, setResponseData] = useState<any>(null);
+  const [responseData, setResponseData] = useState<APIResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Form states
@@ -186,9 +218,9 @@ export function TestAPI({ onClose }: TestAPIProps) {
   };
   
   const renderTravelRecommendationForm = () => (
-    <div className="api-form tee-form">
-      <h3 className="form-header">{t('testAPI.travelRecommendationTitle', 'Travel Recommendations')}</h3>
-      <div className="form-row">
+    <div className="api-form">
+      <h3>{t('testAPI.travelRecommendationTitle', 'Travel Recommendations')}</h3>
+      <div className="form-group">
         <label>{t('testAPI.destination')}</label>
         <input
           type="text"
@@ -198,9 +230,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             destination: e.target.value
           })}
           placeholder={t('testAPI.destinationPlaceholder', 'e.g. Tokyo, Japan')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.days')}</label>
         <input
           type="number"
@@ -211,9 +244,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
           })}
           min="1"
           max="14"
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.preferences')}</label>
         <input
           type="text"
@@ -223,9 +257,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             preferences: e.target.value
           })}
           placeholder={t('testAPI.preferencesPlaceholder', 'e.g. nature, food, culture')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>
           <input
             type="checkbox"
@@ -241,7 +276,7 @@ export function TestAPI({ onClose }: TestAPIProps) {
       <button 
         onClick={handleTravelRecommendationSubmit}
         disabled={isLoading || !travelForm.destination}
-        className="submit-button tee-button"
+        className="action-button"
       >
         {isLoading ? t('testAPI.processing', 'Processing...') : t('testAPI.getRecommendations', 'Get Recommendations')}
       </button>
@@ -249,9 +284,9 @@ export function TestAPI({ onClose }: TestAPIProps) {
   );
   
   const renderExplorationRecommendationForm = () => (
-    <div className="api-form tee-form">
-      <h3 className="form-header">{t('testAPI.explorationRecommendationTitle', 'Exploration Recommendations')}</h3>
-      <div className="form-row">
+    <div className="api-form">
+      <h3>{t('testAPI.explorationRecommendationTitle', 'Exploration Recommendations')}</h3>
+      <div className="form-group">
         <label>{t('testAPI.currentLocation')}</label>
         <div className="location-inputs">
           <input
@@ -262,6 +297,7 @@ export function TestAPI({ onClose }: TestAPIProps) {
               currentLocation: [parseFloat(e.target.value) || 0, explorationForm.currentLocation[1]]
             })}
             placeholder="Longitude"
+            className="form-control"
           />
           <input
             type="number"
@@ -271,10 +307,11 @@ export function TestAPI({ onClose }: TestAPIProps) {
               currentLocation: [explorationForm.currentLocation[0], parseFloat(e.target.value) || 0]
             })}
             placeholder="Latitude"
+            className="form-control"
           />
         </div>
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.radius', 'Search Radius (km)')}</label>
         <input
           type="number"
@@ -285,9 +322,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
           })}
           min="1"
           max="50"
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.categories', 'Categories')}</label>
         <input
           type="text"
@@ -297,9 +335,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             categories: e.target.value
           })}
           placeholder={t('testAPI.categoriesPlaceholder', 'e.g. nature, food, culture')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.maxResults', 'Max Results')}</label>
         <input
           type="number"
@@ -310,12 +349,13 @@ export function TestAPI({ onClose }: TestAPIProps) {
           })}
           min="1"
           max="20"
+          className="form-control"
         />
       </div>
       <button 
         onClick={handleExplorationRecommendationSubmit}
         disabled={isLoading}
-        className="submit-button tee-button"
+        className="action-button"
       >
         {isLoading ? t('testAPI.processing', 'Processing...') : t('testAPI.findPlaces', 'Find Places')}
       </button>
@@ -323,9 +363,9 @@ export function TestAPI({ onClose }: TestAPIProps) {
   );
   
   const renderMapboxInteractionForm = () => (
-    <div className="api-form tee-form">
-      <h3 className="form-header">{t('testAPI.mapboxInteractionTitle', 'Mapbox Interaction')}</h3>
-      <div className="form-row">
+    <div className="api-form">
+      <h3>{t('testAPI.mapboxInteractionTitle', 'Mapbox Interaction')}</h3>
+      <div className="form-group">
         <label>{t('testAPI.query')}</label>
         <input
           type="text"
@@ -335,9 +375,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             query: e.target.value
           })}
           placeholder={t('testAPI.queryPlaceholder', 'e.g. restaurants, parks, museums')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.currentLocation')}</label>
         <div className="location-inputs">
           <input
@@ -348,6 +389,7 @@ export function TestAPI({ onClose }: TestAPIProps) {
               currentLocation: [parseFloat(e.target.value) || 0, mapboxForm.currentLocation[1]]
             })}
             placeholder="Longitude"
+            className="form-control"
           />
           <input
             type="number"
@@ -357,13 +399,14 @@ export function TestAPI({ onClose }: TestAPIProps) {
               currentLocation: [mapboxForm.currentLocation[0], parseFloat(e.target.value) || 0]
             })}
             placeholder="Latitude"
+            className="form-control"
           />
         </div>
       </div>
       <button 
         onClick={handleMapboxInteractionSubmit}
         disabled={isLoading}
-        className="submit-button tee-button"
+        className="action-button"
       >
         {isLoading ? t('testAPI.processing', 'Processing...') : t('testAPI.sendQuery', 'Send Query')}
       </button>
@@ -371,9 +414,9 @@ export function TestAPI({ onClose }: TestAPIProps) {
   );
   
   const renderRewardValidationForm = () => (
-    <div className="api-form tee-form">
-      <h3 className="form-header">{t('testAPI.rewardValidationTitle', 'Reward Validation')}</h3>
-      <div className="form-row">
+    <div className="api-form">
+      <h3>{t('testAPI.rewardValidationTitle', 'Reward Validation')}</h3>
+      <div className="form-group">
         <label>{t('testAPI.rewardId', 'Reward ID')}</label>
         <input
           type="text"
@@ -383,9 +426,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             rewardId: e.target.value
           })}
           placeholder={t('testAPI.rewardIdPlaceholder', 'Enter reward ID')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.claimCode', 'Claim Code')}</label>
         <input
           type="text"
@@ -395,9 +439,10 @@ export function TestAPI({ onClose }: TestAPIProps) {
             claimCode: e.target.value
           })}
           placeholder={t('testAPI.claimCodePlaceholder', 'Enter claim code')}
+          className="form-control"
         />
       </div>
-      <div className="form-row">
+      <div className="form-group">
         <label>{t('testAPI.userLocation', 'Your Current Location')}</label>
         <div className="location-inputs">
           <input
@@ -408,6 +453,7 @@ export function TestAPI({ onClose }: TestAPIProps) {
               userLocation: [parseFloat(e.target.value) || 0, rewardForm.userLocation[1]]
             })}
             placeholder="Longitude"
+            className="form-control"
           />
           <input
             type="number"
@@ -417,13 +463,14 @@ export function TestAPI({ onClose }: TestAPIProps) {
               userLocation: [rewardForm.userLocation[0], parseFloat(e.target.value) || 0]
             })}
             placeholder="Latitude"
+            className="form-control"
           />
         </div>
       </div>
       <button 
         onClick={handleRewardValidationSubmit}
         disabled={isLoading || !rewardForm.rewardId || !rewardForm.claimCode}
-        className="submit-button tee-button"
+        className="action-button"
       >
         {isLoading ? t('testAPI.processing', 'Processing...') : t('testAPI.validateReward', 'Validate Reward')}
       </button>
@@ -431,63 +478,87 @@ export function TestAPI({ onClose }: TestAPIProps) {
   );
   
   const renderEndpointSelector = () => (
-    <div className="endpoint-selector">
+    <div className="treasure-box-card-selector">
       <h3>{t('testAPI.selectEndpoint', 'Select an API endpoint to test')}</h3>
-      <div className="endpoint-buttons tee-features">
-        <button 
-          className={`tee-feature-button ${selectedEndpoint === APIEndpoint.TravelRecommendation ? 'active' : ''}`}
+      <div className="card-options">
+        <div 
+          className="card-option"
           onClick={() => setSelectedEndpoint(APIEndpoint.TravelRecommendation)}
         >
-          <span className="emoji">✈️</span> {t('testAPI.travelRecommendation', 'Travel Recommendation')}
-        </button>
-        <button 
-          className={`tee-feature-button ${selectedEndpoint === APIEndpoint.ExplorationRecommendation ? 'active' : ''}`}
+          <div className="option-icon l1-icon">✈️</div>
+          <h4>{t('testAPI.travelRecommendation', 'Travel Recommendation')}</h4>
+          <p>{t('testAPI.travelRecommendationDesc', 'Get personalized travel itineraries')}</p>
+        </div>
+        
+        <div 
+          className="card-option"
           onClick={() => setSelectedEndpoint(APIEndpoint.ExplorationRecommendation)}
         >
-          <span className="emoji">🔍</span> {t('testAPI.explorationRecommendation', 'Exploration')}
-        </button>
-        <button 
-          className={`tee-feature-button ${selectedEndpoint === APIEndpoint.MapboxInteraction ? 'active' : ''}`}
+          <div className="option-icon l2-icon">🔍</div>
+          <h4>{t('testAPI.explorationRecommendation', 'Exploration')}</h4>
+          <p>{t('testAPI.explorationRecommendationDesc', 'Discover nearby places')}</p>
+        </div>
+        
+        <div 
+          className="card-option"
           onClick={() => setSelectedEndpoint(APIEndpoint.MapboxInteraction)}
         >
-          <span className="emoji">🗺️</span> {t('testAPI.mapboxInteraction', 'Mapbox Search')}
-        </button>
-        <button 
-          className={`tee-feature-button ${selectedEndpoint === APIEndpoint.RewardValidation ? 'active' : ''}`}
+          <div className="option-icon private-icon">🗺️</div>
+          <h4>{t('testAPI.mapboxInteraction', 'Mapbox Search')}</h4>
+          <p>{t('testAPI.mapboxInteractionDesc', 'Search for locations')}</p>
+        </div>
+        
+        <div 
+          className="card-option"
           onClick={() => setSelectedEndpoint(APIEndpoint.RewardValidation)}
         >
-          <span className="emoji">🏆</span> {t('testAPI.rewardValidation', 'Reward Validation')}
-        </button>
+          <div className="option-icon l1-icon">🏆</div>
+          <h4>{t('testAPI.rewardValidation', 'Reward Validation')}</h4>
+          <p>{t('testAPI.rewardValidationDesc', 'Validate and claim rewards')}</p>
+        </div>
       </div>
     </div>
   );
   
+  const handleBack = () => {
+    setSelectedEndpoint(null);
+    setResponseData(null);
+  };
+  
+  const renderForm = () => {
+    if (!selectedEndpoint) return renderEndpointSelector();
+    
+    return (
+      <>
+        <button className="back-button" onClick={handleBack}>
+          ← {t('back')}
+        </button>
+        
+        {selectedEndpoint === APIEndpoint.TravelRecommendation && renderTravelRecommendationForm()}
+        {selectedEndpoint === APIEndpoint.ExplorationRecommendation && renderExplorationRecommendationForm()}
+        {selectedEndpoint === APIEndpoint.MapboxInteraction && renderMapboxInteractionForm()}
+        {selectedEndpoint === APIEndpoint.RewardValidation && renderRewardValidationForm()}
+      </>
+    );
+  };
+  
   return (
-    <div className="zk-verification-modal tee-zone-modal">
-      <div className="tee-modal-container">
-        <div className="tee-modal-header">
-          <div className="tee-modal-title">
-            <span role="img" aria-label="api">🧪</span> {t('testAPI.title', 'API Testing')}
-          </div>
-          <button className="tee-close-button" onClick={onClose}>&times;</button>
+    <div className="treasure-box-container">
+      <div className="treasure-box-overlay" onClick={onClose}></div>
+      
+      <div className="treasure-box-content">
+        <div className="treasure-box-header">
+          <h2><span role="img" aria-label="api">🧪</span> {t('testAPI.title', 'API Testing')}</h2>
+          <button className="close-button" onClick={onClose}>&times;</button>
         </div>
         
-        <div className="api-test-container">
-          {renderEndpointSelector()}
-          
-          {selectedEndpoint && (
-            <div className="api-form-container">
-              {selectedEndpoint === APIEndpoint.TravelRecommendation && renderTravelRecommendationForm()}
-              {selectedEndpoint === APIEndpoint.ExplorationRecommendation && renderExplorationRecommendationForm()}
-              {selectedEndpoint === APIEndpoint.MapboxInteraction && renderMapboxInteractionForm()}
-              {selectedEndpoint === APIEndpoint.RewardValidation && renderRewardValidationForm()}
-            </div>
-          )}
+        <div className="treasure-box-body">
+          {renderForm()}
           
           {responseData && (
             <div className="api-response-container">
               <h3>{t('testAPI.response', 'Response')}</h3>
-              <div className="response-data tee-result">
+              <div className={`status-message ${responseData.status === 'success' ? 'success-message' : 'error-message'}`}>
                 <pre className="result-raw-json">{JSON.stringify(responseData, null, 2)}</pre>
               </div>
             </div>

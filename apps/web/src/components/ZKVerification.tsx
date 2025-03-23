@@ -24,53 +24,34 @@ interface ZKVerificationProps {
 
 export function ZKVerification({ onClose }: ZKVerificationProps) {
   const { t } = useTranslation();
-  const [verificationType, setVerificationType] = useState<VerificationType | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [verifyStep, setVerifyStep] = useState<string | null>(null);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Default values based on the test cases in the Noir code
-  const [formData, setFormData] = useState({
-    // Proof of Visit defaults (based on proof_of_visit.nr test)
+  const [selectedType, setSelectedType] = useState<VerificationType | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({
     latitude: '37.123456',
     longitude: '-122.987654',
-    visitTimestamp: '1649700000',
-    
-    // Reputation Proof defaults (based on reputation_proofs.nr test)
+    visitTimestamp: Math.floor(Date.now() / 1000).toString(),
     actualScore: '100',
     threshold: '80',
-    
-    // Ownership Proof defaults (based on ownership_proofs.nr test)
     tokenBalance: '42',
     minRequired: '10',
-    
-    // Commitment Proof defaults (based on trustless_commitments.nr test)
     taskDescription: 'Complete the hackathon project',
     deadline: '1650000000',
-    
-    // Explorer Badge Proof defaults
     jwtToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aXNpdGVkX3BsYWNlcyI6MTUsImV4cCI6MTY4MDAwMDAwMCwiaWF0IjoxNTE2MjM5MDIyfQ',
     requiredVisits: '10'
   });
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message?: string } | null>(null);
+  const [step, setStep] = useState<'init' | 'generating' | 'verifying' | 'complete'>('init');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear any error when user edits the form
-    setError(null);
+    setFormValues(prev => ({ ...prev, [name]: value }));
   };
 
   const resetForm = () => {
-    setVerificationType(null);
-    setResult(null);
-    setVerifyStep(null);
-    setError(null);
-    // Reset to defaults
-    setFormData({
+    setFormValues({
       latitude: '37.123456',
       longitude: '-122.987654',
-      visitTimestamp: '1649700000',
+      visitTimestamp: Math.floor(Date.now() / 1000).toString(),
       actualScore: '100',
       threshold: '80',
       tokenBalance: '42',
@@ -80,445 +61,526 @@ export function ZKVerification({ onClose }: ZKVerificationProps) {
       jwtToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aXNpdGVkX3BsYWNlcyI6MTUsImV4cCI6MTY4MDAwMDAwMCwiaWF0IjoxNTE2MjM5MDIyfQ',
       requiredVisits: '10'
     });
+    setResult(null);
+    setStep('init');
+  };
+
+  const handleBack = () => {
+    setSelectedType(null);
+    resetForm();
   };
 
   const validateInput = () => {
-    switch (verificationType) {
-      case VerificationType.PROOF_OF_VISIT:
-        if (isNaN(parseFloat(formData.latitude)) || isNaN(parseFloat(formData.longitude))) {
-          setError(t('zkVerification.invalidCoordinates'));
-          return false;
-        }
-        if (isNaN(parseInt(formData.visitTimestamp))) {
-          setError(t('zkVerification.invalidTimestamp'));
-          return false;
-        }
-        break;
-      case VerificationType.REPUTATION:
-        if (isNaN(parseInt(formData.actualScore)) || isNaN(parseInt(formData.threshold))) {
-          setError(t('zkVerification.invalidScores'));
-          return false;
-        }
-        break;
-      case VerificationType.OWNERSHIP:
-        if (isNaN(parseInt(formData.tokenBalance)) || isNaN(parseInt(formData.minRequired))) {
-          setError(t('zkVerification.invalidTokenValues'));
-          return false;
+    let isValid = true;
+    let errorMessage = '';
+
+    switch (selectedType) {
+      case VerificationType.PROOF_OF_VISIT: {
+        const lat = parseFloat(formValues.latitude || '0');
+        const lng = parseFloat(formValues.longitude || '0');
+        const visitTime = parseInt(formValues.visitTimestamp || '0');
+        
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          errorMessage = t('zkVerification.invalidCoordinates');
+          isValid = false;
+        } else if (isNaN(visitTime) || visitTime <= 0) {
+          errorMessage = t('zkVerification.invalidTimestamp');
+          isValid = false;
         }
         break;
-      case VerificationType.COMMITMENT:
-        if (!formData.taskDescription.trim()) {
-          setError(t('zkVerification.emptyTaskDescription'));
-          return false;
-        }
-        if (isNaN(parseInt(formData.deadline))) {
-          setError(t('zkVerification.invalidDeadline'));
-          return false;
-        }
-        break;
-      case VerificationType.EXPLORER_BADGE:
-        if (!formData.jwtToken.trim()) {
-          setError(t('zkVerification.emptyJwtToken'));
-          return false;
-        }
-        if (isNaN(parseInt(formData.requiredVisits))) {
-          setError(t('zkVerification.invalidRequiredVisits'));
-          return false;
+      }
+        
+      case VerificationType.REPUTATION: {
+        const actualScore = parseFloat(formValues.actualScore || '0');
+        const threshold = parseFloat(formValues.threshold || '0');
+        
+        if (isNaN(actualScore) || isNaN(threshold) || actualScore < 0 || threshold < 0) {
+          errorMessage = t('zkVerification.invalidScores');
+          isValid = false;
         }
         break;
+      }
+        
+      case VerificationType.OWNERSHIP: {
+        const tokenBalance = parseFloat(formValues.tokenBalance || '0');
+        const minRequired = parseFloat(formValues.minRequired || '0');
+        
+        if (isNaN(tokenBalance) || isNaN(minRequired) || tokenBalance < 0 || minRequired < 0) {
+          errorMessage = t('zkVerification.invalidTokenValues');
+          isValid = false;
+        }
+        break;
+      }
+        
+      case VerificationType.COMMITMENT: {
+        const taskDescription = formValues.taskDescription || '';
+        const deadline = parseInt(formValues.deadline || '0');
+        
+        if (!taskDescription.trim()) {
+          errorMessage = t('zkVerification.emptyTaskDescription');
+          isValid = false;
+        } else if (isNaN(deadline) || deadline <= 0) {
+          errorMessage = t('zkVerification.invalidDeadline');
+          isValid = false;
+        }
+        break;
+      }
+        
+      case VerificationType.EXPLORER_BADGE: {
+        const jwtToken = formValues.jwtToken || '';
+        const requiredVisits = parseInt(formValues.requiredVisits || '0');
+        
+        if (!jwtToken.trim()) {
+          errorMessage = t('zkVerification.emptyJwtToken');
+          isValid = false;
+        } else if (isNaN(requiredVisits) || requiredVisits <= 0) {
+          errorMessage = t('zkVerification.invalidRequiredVisits');
+          isValid = false;
+        }
+        break;
+      }
     }
-    return true;
+    
+    if (!isValid) {
+      setResult({ success: false, message: errorMessage });
+    }
+    
+    return isValid;
   };
 
   const handleVerify = async () => {
-    if (!validateInput()) {
-      return;
-    }
+    if (!validateInput()) return;
     
-    setIsLoading(true);
-    setResult(null);
-    setVerifyStep('initializing');
-    setError(null);
-
     try {
-      let proof: ProofData;
+      setIsVerifying(true);
+      setResult(null);
+      setStep('init');
       
-      setVerifyStep('generating_proof');
-      switch (verificationType) {
-        case VerificationType.PROOF_OF_VISIT:
-          proof = await generateProofOfVisit(
-            parseFloat(formData.latitude),
-            parseFloat(formData.longitude),
-            parseInt(formData.visitTimestamp)
+      // Wait for UI to update before continuing
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setStep('generating');
+      
+      let proofData: ProofData | null = null;
+      
+      // Generate the appropriate proof based on the selected type
+      switch (selectedType) {
+        case VerificationType.PROOF_OF_VISIT: {
+          // Ensure values are valid numbers and not NaN
+          const latitude = parseFloat(formValues.latitude || '0');
+          const longitude = parseFloat(formValues.longitude || '0');
+          const visitTimestamp = parseInt(formValues.visitTimestamp || '0');
+          
+          if (isNaN(latitude) || isNaN(longitude) || isNaN(visitTimestamp)) {
+            throw new Error('Invalid input values');
+          }
+          
+          proofData = await generateProofOfVisit(
+            latitude,
+            longitude,
+            visitTimestamp
           );
           break;
-        case VerificationType.REPUTATION:
-          proof = await generateReputationProof(
-            Math.min(parseInt(formData.actualScore), 100),
-            Math.min(parseInt(formData.threshold), 100)
+        }
+          
+        case VerificationType.REPUTATION: {
+          // Ensure values are valid numbers and not NaN
+          const actualScore = parseFloat(formValues.actualScore || '0');
+          const threshold = parseFloat(formValues.threshold || '0');
+          
+          if (isNaN(actualScore) || isNaN(threshold)) {
+            throw new Error('Invalid input values');
+          }
+          
+          proofData = await generateReputationProof(
+            actualScore,
+            threshold
           );
           break;
-        case VerificationType.OWNERSHIP:
-          proof = await generateOwnershipProof(
-            Math.min(parseInt(formData.tokenBalance), 100),
-            Math.min(parseInt(formData.minRequired), 100)
+        }
+          
+        case VerificationType.OWNERSHIP: {
+          // Ensure values are valid numbers and not NaN
+          const tokenBalance = parseFloat(formValues.tokenBalance || '0');
+          const minRequired = parseFloat(formValues.minRequired || '0');
+          
+          if (isNaN(tokenBalance) || isNaN(minRequired)) {
+            throw new Error('Invalid input values');
+          }
+          
+          proofData = await generateOwnershipProof(
+            tokenBalance,
+            minRequired
           );
           break;
-        case VerificationType.COMMITMENT:
-          proof = await generateCommitmentProof(
-            formData.taskDescription,
-            parseInt(formData.deadline)
+        }
+          
+        case VerificationType.COMMITMENT: {
+          // Ensure values are valid
+          const taskDescription = formValues.taskDescription || '';
+          const deadline = parseInt(formValues.deadline || '0');
+          
+          if (taskDescription.trim() === '' || isNaN(deadline)) {
+            throw new Error('Invalid input values');
+          }
+          
+          proofData = await generateCommitmentProof(
+            taskDescription,
+            deadline
           );
           break;
-        case VerificationType.EXPLORER_BADGE:
-          proof = await generateExplorerBadgeProof(
-            formData.jwtToken,
-            Math.min(parseInt(formData.requiredVisits), 100)
+        }
+          
+        case VerificationType.EXPLORER_BADGE: {
+          // Ensure values are valid
+          const jwtToken = formValues.jwtToken || '';
+          const requiredVisits = parseInt(formValues.requiredVisits || '0');
+          
+          if (jwtToken.trim() === '' || isNaN(requiredVisits)) {
+            throw new Error('Invalid input values');
+          }
+          
+          proofData = await generateExplorerBadgeProof(
+            jwtToken,
+            requiredVisits
           );
           break;
-        default:
-          throw new Error('Invalid verification type');
+        }
       }
       
-      setVerifyStep('verifying_proof');
-      console.log('Proof object before verification:', proof);
-      const verified = await verifyProof(proof);
+      if (!proofData) {
+        throw new Error('Failed to generate proof');
+      }
       
-      setVerifyStep('complete');
+      setStep('verifying');
+      
+      // Verify the generated proof
+      const verificationResult = await verifyProof(proofData);
+      
+      setStep('complete');
       setResult({
-        success: verified,
-        message: verified
-          ? t('zkVerification.success')
+        success: verificationResult,
+        message: verificationResult 
+          ? t('zkVerification.success') 
           : t('zkVerification.failure')
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Verification error:', error);
-      setVerifyStep('error');
       
-      // Create a more user-friendly error message
-      let errorMessage = '';
-      if (error instanceof Error) {
-        // Extract the most relevant part of the error message
-        const fullMessage = error.message;
-        
-        if (fullMessage.includes('unwrap_throw')) {
-          errorMessage = t('zkVerification.zkErrors.unwrap_throw');
-        } else if (fullMessage.includes('TypeError')) {
-          errorMessage = t('zkVerification.zkErrors.typeError');
-        } else if (fullMessage.includes('Failed to load circuit')) {
-          errorMessage = t('zkVerification.zkErrors.loadCircuit');
-        } else if (fullMessage.includes('backend not initialized')) {
-          errorMessage = t('zkVerification.zkErrors.initBackend');
-        } else if (fullMessage.includes('zkErrors.locationHash')) {
-          errorMessage = t('zkVerification.zkErrors.locationHash');
-        } else if (fullMessage.includes('zkErrors.reputation')) {
-          errorMessage = t('zkVerification.zkErrors.reputation');
-        } else if (fullMessage.includes('zkErrors.tokenBalance')) {
-          errorMessage = t('zkVerification.zkErrors.tokenBalance');
-        } else if (fullMessage.includes('zkErrors.commitment')) {
-          errorMessage = t('zkVerification.zkErrors.commitment');
-        } else if (fullMessage.includes('zkErrors.jwt')) {
-          errorMessage = t('zkVerification.zkErrors.jwt');
-        } else if (fullMessage.includes('zkErrors.visitTime')) {
-          errorMessage = t('zkVerification.zkErrors.visitTime');
-        } else if (fullMessage.includes('zkErrors.deadline')) {
-          errorMessage = t('zkVerification.zkErrors.deadline');
-        } else if (fullMessage.includes('zkErrors.requiredVisits')) {
-          errorMessage = t('zkVerification.zkErrors.requiredVisits');
-        } else if (fullMessage.includes('zkErrors.invalidScore')) {
-          errorMessage = t('zkVerification.zkErrors.invalidScore');
-        } else if (fullMessage.includes('zkErrors.invalidThreshold')) {
-          errorMessage = t('zkVerification.zkErrors.invalidThreshold');
-        } else if (fullMessage.includes('zkErrors.invalidMinimum')) {
-          errorMessage = t('zkVerification.zkErrors.invalidMinimum');
-        } else {
-          // Use the original error message if we can't identify a specific pattern
-          errorMessage = fullMessage;
-        }
-      } else {
-        errorMessage = t('zkVerification.zkErrors.unknown');
+      // Extract known error types for better messages
+      let userMessage = t('zkVerification.error', { message: errorMessage });
+      
+      // Check for specific error types
+      if (errorMessage.includes('unwrap_throw')) {
+        userMessage = t('zkVerification.zkErrors.unwrap_throw');
+      } else if (errorMessage.includes('TypeError')) {
+        userMessage = t('zkVerification.zkErrors.typeError');
+      } else if (errorMessage.includes('load circuit')) {
+        userMessage = t('zkVerification.zkErrors.loadCircuit');
+      } else if (errorMessage.includes('init backend')) {
+        userMessage = t('zkVerification.zkErrors.initBackend');
       }
       
-      setResult({
-        success: false,
-        message: `ZK Verification Error: ${errorMessage}`
-      });
+      setResult({ success: false, message: userMessage });
+      setStep('complete');
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   };
 
   const renderForm = () => {
-    switch (verificationType) {
-      case VerificationType.PROOF_OF_VISIT:
-        return (
+    if (!selectedType) return null;
+    
+    const typeTitle = t(`zkVerification.${selectedType}Title`);
+    
+    return (
+      <div>
+        <button className="back-button" onClick={handleBack}>
+          ← {t('zkVerification.back')}
+        </button>
+        
+        <h3>{typeTitle}</h3>
+        
+        {selectedType === VerificationType.PROOF_OF_VISIT && (
           <>
-            <div className="form-description">
-              {t('zkVerification.proof_of_visitDescription')}
-            </div>
             <div className="form-group">
-              <label>{t('zkVerification.latitude')}</label>
+              <label htmlFor="latitude">{t('zkVerification.latitude')}</label>
               <input
                 type="text"
+                id="latitude"
                 name="latitude"
-                value={formData.latitude}
+                value={formValues.latitude || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.latitudePlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
+            
             <div className="form-group">
-              <label>{t('zkVerification.longitude')}</label>
+              <label htmlFor="longitude">{t('zkVerification.longitude')}</label>
               <input
                 type="text"
+                id="longitude"
                 name="longitude"
-                value={formData.longitude}
+                value={formValues.longitude || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.longitudePlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
+            
             <div className="form-group">
-              <label>{t('zkVerification.visitTimestamp')}</label>
+              <label htmlFor="visitTimestamp">{t('zkVerification.visitTimestamp')}</label>
               <input
-                type="number"
+                type="text"
+                id="visitTimestamp"
                 name="visitTimestamp"
-                value={formData.visitTimestamp}
+                value={formValues.visitTimestamp || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.visitTimestampPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
           </>
-        );
-
-      case VerificationType.REPUTATION:
-        return (
+        )}
+        
+        {selectedType === VerificationType.REPUTATION && (
           <>
-            <div className="form-description">
-              {t('zkVerification.reputationDescription')}
-            </div>
             <div className="form-group">
-              <label>{t('zkVerification.actualScore')}</label>
+              <label htmlFor="actualScore">{t('zkVerification.actualScore')}</label>
               <input
-                type="number"
+                type="text"
+                id="actualScore"
                 name="actualScore"
-                value={formData.actualScore}
+                value={formValues.actualScore || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.actualScorePlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
+            
             <div className="form-group">
-              <label>{t('zkVerification.threshold')}</label>
+              <label htmlFor="threshold">{t('zkVerification.threshold')}</label>
               <input
-                type="number"
+                type="text"
+                id="threshold"
                 name="threshold"
-                value={formData.threshold}
+                value={formValues.threshold || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.thresholdPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
           </>
-        );
-
-      case VerificationType.OWNERSHIP:
-        return (
+        )}
+        
+        {selectedType === VerificationType.OWNERSHIP && (
           <>
-            <div className="form-description">
-              {t('zkVerification.ownershipDescription')}
-            </div>
             <div className="form-group">
-              <label>{t('zkVerification.tokenBalance')}</label>
+              <label htmlFor="tokenBalance">{t('zkVerification.tokenBalance')}</label>
               <input
-                type="number"
+                type="text"
+                id="tokenBalance"
                 name="tokenBalance"
-                value={formData.tokenBalance}
+                value={formValues.tokenBalance || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.tokenBalancePlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
+            
             <div className="form-group">
-              <label>{t('zkVerification.minRequired')}</label>
+              <label htmlFor="minRequired">{t('zkVerification.minRequired')}</label>
               <input
-                type="number"
+                type="text"
+                id="minRequired"
                 name="minRequired"
-                value={formData.minRequired}
+                value={formValues.minRequired || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.minRequiredPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
           </>
-        );
-
-      case VerificationType.COMMITMENT:
-        return (
+        )}
+        
+        {selectedType === VerificationType.COMMITMENT && (
           <>
-            <div className="form-description">
-              {t('zkVerification.commitmentDescription')}
-            </div>
             <div className="form-group">
-              <label>{t('zkVerification.taskDescription')}</label>
+              <label htmlFor="taskDescription">{t('zkVerification.taskDescription')}</label>
               <textarea
+                id="taskDescription"
                 name="taskDescription"
-                value={formData.taskDescription}
+                value={formValues.taskDescription || ''}
                 onChange={handleChange}
                 placeholder={t('zkVerification.taskDescriptionPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
                 rows={3}
               />
             </div>
+            
             <div className="form-group">
-              <label>{t('zkVerification.deadline')}</label>
-              <input
-                type="number"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
-                placeholder={t('zkVerification.deadlinePlaceholder')}
-              />
-            </div>
-          </>
-        );
-
-      case VerificationType.EXPLORER_BADGE:
-        return (
-          <>
-            <div className="form-description">
-              {t('zkVerification.explorerBadgeDescription')}
-            </div>
-            <div className="form-group">
-              <label>{t('zkVerification.jwtToken')}</label>
+              <label htmlFor="deadline">{t('zkVerification.deadline')}</label>
               <input
                 type="text"
-                name="jwtToken"
-                value={formData.jwtToken}
+                id="deadline"
+                name="deadline"
+                value={formValues.deadline || ''}
                 onChange={handleChange}
-                placeholder={t('zkVerification.jwtTokenPlaceholder')}
-              />
-            </div>
-            <div className="form-group">
-              <label>{t('zkVerification.requiredVisits')}</label>
-              <input
-                type="number"
-                name="requiredVisits"
-                value={formData.requiredVisits}
-                onChange={handleChange}
-                placeholder={t('zkVerification.requiredVisitsPlaceholder')}
+                placeholder={t('zkVerification.deadlinePlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
               />
             </div>
           </>
-        );
-
-      default:
-        return null;
-    }
+        )}
+        
+        {selectedType === VerificationType.EXPLORER_BADGE && (
+          <>
+            <div className="form-group">
+              <label htmlFor="jwtToken">{t('zkVerification.jwtToken')}</label>
+              <input
+                type="text"
+                id="jwtToken"
+                name="jwtToken"
+                value={formValues.jwtToken || ''}
+                onChange={handleChange}
+                placeholder={t('zkVerification.jwtTokenPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="requiredVisits">{t('zkVerification.requiredVisits')}</label>
+              <input
+                type="text"
+                id="requiredVisits"
+                name="requiredVisits"
+                value={formValues.requiredVisits || ''}
+                onChange={handleChange}
+                placeholder={t('zkVerification.requiredVisitsPlaceholder')}
+                className="form-control"
+                disabled={isVerifying}
+              />
+            </div>
+          </>
+        )}
+        
+        {result && (
+          <div className={`status-message ${result.success ? 'success-message' : 'error-message'}`}>
+            {result.message}
+          </div>
+        )}
+        
+        {renderVerificationSteps()}
+        
+        <button 
+          className="action-button"
+          onClick={handleVerify}
+          disabled={isVerifying}
+        >
+          {isVerifying ? t('zkVerification.verifying') : t('zkVerification.verify')}
+        </button>
+      </div>
+    );
   };
 
   const renderVerificationSteps = () => {
-    if (!verifyStep) return null;
+    if (step === 'init' && !isVerifying) return null;
     
     return (
       <div className="verification-steps">
-        <div className={`step ${verifyStep === 'initializing' ? 'active' : verifyStep !== 'error' ? 'completed' : 'error'}`}>
-          <span className="step-number">1</span>
-          <span className="step-text">{t('zkVerification.initializingBackend')}</span>
+        <div className={`step ${step === 'init' ? 'active' : (step === 'generating' || step === 'verifying' || step === 'complete' ? 'complete' : '')}`}>
+          {t('zkVerification.initializingBackend')}
         </div>
-        <div className={`step ${verifyStep === 'generating_proof' ? 'active' : (verifyStep === 'verifying_proof' || verifyStep === 'complete') ? 'completed' : verifyStep === 'error' ? 'error' : ''}`}>
-          <span className="step-number">2</span>
-          <span className="step-text">{t('zkVerification.generatingProof')}</span>
+        <div className={`step ${step === 'generating' ? 'active' : ((step === 'verifying' || step === 'complete') ? 'complete' : '')}`}>
+          {t('zkVerification.generatingProof')}
         </div>
-        <div className={`step ${verifyStep === 'verifying_proof' ? 'active' : verifyStep === 'complete' ? 'completed' : verifyStep === 'error' ? 'error' : ''}`}>
-          <span className="step-number">3</span>
-          <span className="step-text">{t('zkVerification.verifyingProof')}</span>
+        <div className={`step ${step === 'verifying' ? 'active' : (step === 'complete' ? 'complete' : '')}`}>
+          {t('zkVerification.verifyingProof')}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTypeSelector = () => {
+    return (
+      <div className="treasure-box-card-selector">
+        <h3>{t('zkVerification.selectType')}</h3>
+        
+        <div className="card-options">
+          <div 
+            className="card-option"
+            onClick={() => setSelectedType(VerificationType.PROOF_OF_VISIT)}
+            title={t('zkVerification.proof_of_visitDescription')}
+          >
+            <div className="option-icon l1-icon">👣</div>
+            <h4>{t('zkVerification.proofOfVisit')}</h4>
+          </div>
+          
+          <div 
+            className="card-option"
+            onClick={() => setSelectedType(VerificationType.REPUTATION)}
+            title={t('zkVerification.reputationDescription')}
+          >
+            <div className="option-icon l2-icon">⭐</div>
+            <h4>{t('zkVerification.reputation')}</h4>
+          </div>
+          
+          <div 
+            className="card-option"
+            onClick={() => setSelectedType(VerificationType.OWNERSHIP)}
+            title={t('zkVerification.ownershipDescription')}
+          >
+            <div className="option-icon private-icon">💰</div>
+            <h4>{t('zkVerification.ownership')}</h4>
+          </div>
+          
+          <div 
+            className="card-option"
+            onClick={() => setSelectedType(VerificationType.COMMITMENT)}
+            title={t('zkVerification.commitmentDescription')}
+          >
+            <div className="option-icon l1-icon">📝</div>
+            <h4>{t('zkVerification.commitment')}</h4>
+          </div>
+          
+          <div 
+            className="card-option"
+            onClick={() => setSelectedType(VerificationType.EXPLORER_BADGE)}
+            title={t('zkVerification.explorerBadgeDescription')}
+          >
+            <div className="option-icon l2-icon">🏅</div>
+            <h4>{t('zkVerification.explorerBadge')}</h4>
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="zk-verification-modal">
-      <div className="modal-header">
-        <h2>{t('zkVerification.title')}</h2>
-        <button className="close-button" onClick={onClose}>
-          ×
-        </button>
-      </div>
-
-      <div className="modal-content">
-        {!verificationType ? (
-          <div className="verification-types">
-            <h3>{t('zkVerification.selectType')}</h3>
-            <div className="verification-type-grid">
-              <button
-                className="verification-type-button"
-                onClick={() => setVerificationType(VerificationType.PROOF_OF_VISIT)}
-              >
-                <span className="emoji">🗺️</span>
-                <span>{t('zkVerification.proofOfVisit')}</span>
-              </button>
-              <button
-                className="verification-type-button"
-                onClick={() => setVerificationType(VerificationType.REPUTATION)}
-              >
-                <span className="emoji">⭐</span>
-                <span>{t('zkVerification.reputation')}</span>
-              </button>
-              <button
-                className="verification-type-button"
-                onClick={() => setVerificationType(VerificationType.OWNERSHIP)}
-              >
-                <span className="emoji">🏆</span>
-                <span>{t('zkVerification.ownership')}</span>
-              </button>
-              <button
-                className="verification-type-button"
-                onClick={() => setVerificationType(VerificationType.COMMITMENT)}
-              >
-                <span className="emoji">🤝</span>
-                <span>{t('zkVerification.commitment')}</span>
-              </button>
-              <button
-                className="verification-type-button"
-                onClick={() => setVerificationType(VerificationType.EXPLORER_BADGE)}
-              >
-                <span className="emoji">🌍</span>
-                <span>{t('zkVerification.explorerBadge')}</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="verification-form">
-            <h3>
-              {t(`zkVerification.${verificationType}Title`)}
-              <button className="back-button" onClick={resetForm}>
-                ↩ {t('zkVerification.back')}
-              </button>
-            </h3>
-            <div className="form-container">
-              {renderForm()}
-              
-              {error && (
-                <div className="error-message">
-                  {error}
-                </div>
-              )}
-              
-              <div className="form-actions">
-                <button
-                  className="verify-button"
-                  onClick={handleVerify}
-                  disabled={isLoading}
-                >
-                  {isLoading ? t('zkVerification.verifying') : t('zkVerification.verify')}
-                </button>
-              </div>
-            </div>
-
-            {isLoading && renderVerificationSteps()}
-
-            {result && (
-              <div className={`result ${result.success ? 'success' : 'error'}`}>
-                <p>{result.message}</p>
-              </div>
-            )}
-          </div>
-        )}
+    <div className="treasure-box-container">
+      <div className="treasure-box-overlay" onClick={onClose}></div>
+      
+      <div className="treasure-box-content">
+        <div className="treasure-box-header">
+          <h2>{t('zkVerification.title')}</h2>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="treasure-box-body">
+          {selectedType ? renderForm() : renderTypeSelector()}
+        </div>
       </div>
     </div>
   );

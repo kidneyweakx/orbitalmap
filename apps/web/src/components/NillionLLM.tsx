@@ -76,68 +76,70 @@ export function NillionLLM({ onClose }: NillionLLMProps) {
   };
 
   return (
-    <div className="zk-verification-modal tee-zone-modal">
-      <div className="tee-modal-container">
-        <div className="tee-modal-header">
-          <div className="tee-modal-title">
-            <span role="img" aria-label="chat">💬</span> {t('nillionLLM.title', 'Nillion LLM Chat')}
-          </div>
-          <button className="tee-close-button" onClick={onClose}>&times;</button>
+    <div className="treasure-box-container">
+      <div className="treasure-box-overlay" onClick={onClose}></div>
+      
+      <div className="treasure-box-content">
+        <div className="treasure-box-header">
+          <h2><span role="img" aria-label="chat">💬</span> {t('nillionLLM.title', 'Nillion LLM Chat')}</h2>
+          <button className="close-button" onClick={onClose}>&times;</button>
         </div>
 
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 ? (
-              <div className="assistant-message">
-                <div className="message-bubble">
-                  {t('nillionLLM.welcomeMessage', 'Welcome to Nillion LLM! Your messages are processed securely in a Trusted Execution Environment. How can I help you today?')}
-                </div>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div 
-                  key={index} 
-                  className={message.role === 'user' ? 'user-message' : 'assistant-message'}
-                >
+        <div className="treasure-box-body">
+          <div className="chat-container">
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="assistant-message">
                   <div className="message-bubble">
-                    {message.content}
+                    {t('nillionLLM.welcomeMessage', 'Welcome to Nillion LLM! Your messages are processed securely in a Trusted Execution Environment. How can I help you today?')}
                   </div>
                 </div>
-              ))
-            )}
-            
-            {isLoading && (
-              <div className="assistant-message">
-                <div className="message-bubble loading">
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                  <div className="dot"></div>
+              ) : (
+                messages.map((message, index) => (
+                  <div 
+                    key={index} 
+                    className={message.role === 'user' ? 'user-message' : 'assistant-message'}
+                  >
+                    <div className="message-bubble">
+                      {message.content}
+                    </div>
+                  </div>
+                ))
+              )}
+              
+              {isLoading && (
+                <div className="assistant-message">
+                  <div className="message-bubble loading">
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
             
-            <div ref={messagesEndRef} />
+            <form onSubmit={handleSubmit} className="chat-input-form">
+              <input
+                type="text"
+                className="chat-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t('nillionLLM.inputPlaceholder', 'Type a message...')}
+                disabled={isLoading}
+              />
+              <button 
+                type="submit" 
+                className="action-button"
+                disabled={isLoading || !input.trim()}
+              >
+                {isLoading 
+                  ? t('nillionLLM.processing', 'Processing...') 
+                  : t('nillionLLM.send', 'Send')}
+              </button>
+            </form>
           </div>
-          
-          <form onSubmit={handleSubmit} className="chat-input-form">
-            <input
-              type="text"
-              className="chat-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('nillionLLM.inputPlaceholder', 'Type a message...')}
-              disabled={isLoading}
-            />
-            <button 
-              type="submit" 
-              className="send-button tee-button"
-              disabled={isLoading || !input.trim()}
-            >
-              {isLoading 
-                ? t('nillionLLM.processing', 'Processing...') 
-                : t('nillionLLM.send', 'Send')}
-            </button>
-          </form>
         </div>
       </div>
     </div>
