@@ -380,18 +380,43 @@ button:disabled {
 }
 
 .mapboxgl-popup-content {
-  padding: 10px;
-  border-radius: 6px;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.1));
+  background-color: var(--card-background, #fff);
+  color: var(--text-color, #1a3766);
 }
 
 .mapboxgl-popup-content h3 {
   margin: 0 0 5px 0;
   font-size: 16px;
+  color: var(--header-color, #0a2550);
 }
 
 .mapboxgl-popup-content p {
   margin: 0;
   font-size: 14px;
+  color: var(--description-color, #3a5280);
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 16px;
+  color: var(--description-color, #64748b);
+  padding: 5px;
+}
+
+/* Style for popup tip/arrow to match dark theme */
+.dark-theme .mapboxgl-popup-tip {
+  border-top-color: var(--card-background, #2c2c2c);
+  border-bottom-color: var(--card-background, #2c2c2c);
+}
+
+.dark-theme .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: var(--card-background, #2c2c2c);
+}
+
+.dark-theme .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: var(--card-background, #2c2c2c);
 }
 
 .navbar {
@@ -954,7 +979,7 @@ body.light-theme .navbar,
 
 /* Dark mode styles */
 :root {
-  --text-color: #333;
+  --text-color: #1a3766;
   --background-color: #fff;
   --card-background: #fff;
   --border-color: #ddd;
@@ -964,10 +989,10 @@ body.light-theme .navbar,
   --shadow-color: rgba(0, 0, 0, 0.15);
   --modal-bg: #fff;
   --input-bg: #fff;
-  --input-text: #333;
+  --input-text: #1a3766;
   --navbar-bg: rgba(235, 237, 240, 0.95);
-  --header-color: #222;
-  --description-color: #555;
+  --header-color: #0a2550;
+  --description-color: #3a5280;
   --delete-btn-color: #ff4d4d;
   --delete-btn-hover: #e60000;
   --form-border: #eee;
@@ -989,7 +1014,7 @@ body.light-theme .navbar,
   --input-bg: #333;
   --input-text: #f0f0f0;
   --navbar-bg: rgba(28, 28, 28, 0.95);
-  --header-color: #f0f0f0;
+  --header-color: #6a9fff;
   --description-color: #bbb;
   --delete-btn-color: #f44336;
   --delete-btn-hover: #d32f2f;
@@ -3009,15 +3034,15 @@ body.light-theme .navbar,
 .recommendation-popup h3 {
   margin: 0 0 5px 0;
   font-size: 16px;
-  color: #0f172a;
+  color: var(--header-color, #0f172a);
 }
 
 .recommendation-type {
   font-size: 12px;
-  color: #64748b;
+  color: var(--description-color, #64748b);
   margin: 0 0 8px 0;
   display: inline-block;
-  background-color: #f1f5f9;
+  background-color: var(--secondary-color, #f1f5f9);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -3025,13 +3050,29 @@ body.light-theme .navbar,
 .mapboxgl-popup-content {
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.1));
+  background-color: var(--card-background, #fff);
+  color: var(--text-color, #1a3766);
 }
 
 .mapboxgl-popup-close-button {
   font-size: 16px;
-  color: #64748b;
+  color: var(--description-color, #64748b);
   padding: 5px;
+}
+
+/* Style for popup tip/arrow to match dark theme */
+.dark-theme .mapboxgl-popup-tip {
+  border-top-color: var(--card-background, #2c2c2c);
+  border-bottom-color: var(--card-background, #2c2c2c);
+}
+
+.dark-theme .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: var(--card-background, #2c2c2c);
+}
+
+.dark-theme .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: var(--card-background, #2c2c2c);
 }
 
 /* Mobile responsiveness */
