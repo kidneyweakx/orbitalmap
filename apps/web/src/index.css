@@ -151,6 +151,7 @@ button:focus-visible {
   font-weight: bold;
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
+  color: var(--text-color, #333);
 }
 
 .provider-status {
@@ -178,33 +179,35 @@ button:focus-visible {
 .provider-info {
   margin-top: 1.5rem;
   padding: 1rem;
-  background-color: #f8f8f8;
+  background-color: var(--card-background, #f8f8f8);
   border-radius: 8px;
   text-align: center;
+  color: var(--text-color, #333);
 }
 
 .change-provider-button {
   margin-left: 0.5rem;
   padding: 0.2rem 0.5rem;
   background-color: transparent;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color, #ccc);
   border-radius: 4px;
   font-size: 0.8rem;
   cursor: pointer;
+  color: var(--text-color, #333);
 }
 
 .change-provider-button:hover {
-  background-color: #f0f0f0;
+  background-color: var(--secondary-color, #f0f0f0);
 }
 
 .provider-endpoint {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--description-color, #666);
   margin-top: 0.5rem;
 }
 
 .provider-endpoint code {
-  background-color: #f0f0f0;
+  background-color: var(--secondary-color, #f0f0f0);
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
 }
@@ -212,5 +215,5 @@ button:focus-visible {
 .provider-indicator {
   margin-top: 0.5rem;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--description-color, #666);
 }

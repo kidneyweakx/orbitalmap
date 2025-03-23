@@ -400,7 +400,7 @@ button:disabled {
   left: 0;
   right: 0;
   height: 60px;
-  background-color: rgba(17, 24, 39, 0.9);
+  background-color: var(--navbar-bg, rgba(17, 24, 39, 0.9));
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -409,11 +409,14 @@ button:disabled {
   z-index: 10;
   backdrop-filter: blur(5px);
   transition: background-color 0.3s;
+  color: var(--text-color, #fff);
 }
 
-.body.light-theme .navbar {
-  background-color: rgba(243, 244, 246, 0.9);
+body.light-theme .navbar, 
+.light-theme .navbar {
+  background-color: rgba(235, 237, 240, 0.95);
   color: #111827;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-title {
@@ -957,14 +960,14 @@ button:disabled {
   --border-color: #ddd;
   --primary-color: #0066cc;
   --primary-hover: #0052a3;
-  --secondary-color: #f5f5f5;
+  --secondary-color: #f0f0f0;
   --shadow-color: rgba(0, 0, 0, 0.15);
   --modal-bg: #fff;
   --input-bg: #fff;
   --input-text: #333;
-  --navbar-bg: #fff;
-  --header-color: #333;
-  --description-color: #666;
+  --navbar-bg: rgba(235, 237, 240, 0.95);
+  --header-color: #222;
+  --description-color: #555;
   --delete-btn-color: #ff4d4d;
   --delete-btn-hover: #e60000;
   --form-border: #eee;
@@ -980,14 +983,14 @@ button:disabled {
   --border-color: #444;
   --primary-color: #4287f5;
   --primary-hover: #5a95f5;
-  --secondary-color: #333;
+  --secondary-color: #383838;
   --shadow-color: rgba(0, 0, 0, 0.3);
   --modal-bg: #2c2c2c;
   --input-bg: #333;
   --input-text: #f0f0f0;
-  --navbar-bg: #1c1c1c;
+  --navbar-bg: rgba(28, 28, 28, 0.95);
   --header-color: #f0f0f0;
-  --description-color: #aaa;
+  --description-color: #bbb;
   --delete-btn-color: #f44336;
   --delete-btn-hover: #d32f2f;
   --form-border: #444;
@@ -1069,23 +1072,27 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  color: var(--text-color, #333);
 }
 
 .spot-tag-badge {
   font-size: 0.75em;
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--secondary-color, rgba(0, 0, 0, 0.1));
   padding: 2px 6px;
   border-radius: 10px;
+  color: var(--text-color, #333);
 }
 
 .tags-selection {
   margin: 12px 0;
+  color: var(--text-color, #333);
 }
 
 .tags-selection label {
   display: block;
   margin-bottom: 8px;
   font-weight: bold;
+  color: var(--text-color, #333);
 }
 
 .tags-options {
