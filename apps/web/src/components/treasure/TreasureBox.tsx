@@ -150,7 +150,6 @@ export function TreasureBox({
         return (
           <L1DetailCard
             onBack={handleBack}
-            isToolboxMode={isToolboxMode}
             onShowOnMap={handleShowOnMap}
           />
         );
@@ -158,7 +157,6 @@ export function TreasureBox({
         return (
           <L2DetailCard
             onBack={handleBack}
-            isToolboxMode={isToolboxMode}
             onShowOnMap={handleShowOnMap}
           />
         );

@@ -1,0 +1,146 @@
+/* ERC-7683 Cross-Chain Banner and Components */
+.cross-chain-banner {
+  background: linear-gradient(45deg, #5c6bc0, #3949ab);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cross-chain-banner:hover {
+  background: linear-gradient(45deg, #3949ab, #283593);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.banner-icon {
+  font-size: 28px;
+  margin-right: 16px;
+}
+
+.banner-text h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.banner-short-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.banner-full-text {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cross-chain-banner:hover .banner-full-text {
+  height: auto;
+  opacity: 1;
+  margin-top: 8px;
+}
+
+.cross-chain-section {
+  background-color: #f5f7ff;
+  border-left: 4px solid #3949ab;
+}
+
+.cross-chain-actions {
+  margin-top: 16px;
+}
+
+.cross-chain-btn {
+  background-color: #3949ab;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.cross-chain-btn:hover {
+  background-color: #5c6bc0;
+}
+
+.cross-chain-btn.disabled {
+  background-color: #9fa8da;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.status-pending {
+  color: #f57c00;
+}
+
+.status-filled {
+  color: #43a047;
+}
+
+.status-expired {
+  color: #e53935;
+}
+
+.technical-section {
+  margin-top: 24px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.code-block {
+  background-color: #263238;
+  border-radius: 4px;
+  padding: 16px;
+  color: #eeffff;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.code-block pre {
+  margin: 0;
+  font-family: 'Fira Code', 'Roboto Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Add to existing styles */
+.detail-value.truncate {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #43a047;
+  margin: 16px 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+} 

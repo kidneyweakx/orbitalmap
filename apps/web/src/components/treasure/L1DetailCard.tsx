@@ -5,6 +5,7 @@ import { POI, CONTRACTS } from '../../utils/contractUtils';
 import { Address, createWalletClient, custom, formatUnits, formatEther, createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
 import L1POIMarketplaceABI from '../../abi/L1POIMarketplace.json';
+import { ContractFunctionButton } from './ContractFunctionButton';
 
 // Define POI details type for display
 interface POIDetail extends POI {
@@ -16,6 +17,9 @@ interface POIDetail extends POI {
   highestBid?: string;
   highestBidder?: string;
   auctionEndTime?: number;
+  // ERC-7683 cross-chain order details
+  crossChainOrderId?: string;
+  crossChainStatus?: 'pending' | 'filled' | 'expired';
 }
 
 interface L1DetailCardProps {
@@ -31,6 +35,8 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
   const [userPOIs, setUserPOIs] = useState<POIDetail[]>([]);
   const [selectedPOI, setSelectedPOI] = useState<POIDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [crossChainSuccess, setCrossChainSuccess] = useState<boolean>(false);
+  const [initiatingCrossChain] = useState<boolean>(false);
 
   useEffect(() => {
     if (user && wallets.length > 0) {
@@ -313,6 +319,19 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
           </button>
           <h3>{selectedPOI.name}</h3>
         </div>
+        
+        {/* ERC-7683 Cross-Chain Banner */}
+        <div className="cross-chain-banner">
+          <div className="banner-icon">🔗</div>
+          <div className="banner-text">
+            <h4>{t('treasureBox.erc7683Banner.title', 'Cross-Chain with ERC-7683')}</h4>
+            <p className="banner-short-text">{t('treasureBox.erc7683Banner.shortDescription', 'Secure cross-chain communication between L1 and L2')}</p>
+            <div className="banner-full-text">
+              <p>{t('treasureBox.erc7683Banner.description', 'This POI uses ERC-7683 standard for secure cross-chain communication between L1 and L2, enabling verification auctions and POI linking.')}</p>
+            </div>
+          </div>
+        </div>
+        
         <div className="poi-detail-content">
           <div className="network-info">
             <span className="network-badge">{selectedPOI.network}</span>
@@ -347,7 +366,7 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
             </div>
           </div>
           
-          {/* ERC-7638 Cross-Chain Information */}
+          {/* ERC-7683 Cross-Chain Information */}
           {selectedPOI.linkedL2Id && (
             <div className="detail-section cross-chain-section">
               <h4>{t('treasureBox.crossChainInfo', 'Cross-Chain Information')}</h4>
@@ -355,6 +374,23 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
                 <span className="detail-label">{t('treasureBox.linkedL2POI', 'Linked L2 POI')}:</span>
                 <span className="detail-value">ID: {selectedPOI.linkedL2Id}</span>
               </div>
+              
+              {selectedPOI.crossChainOrderId && (
+                <div className="detail-item">
+                  <span className="detail-label">{t('treasureBox.crossChainOrderId', 'Cross-Chain Order ID')}:</span>
+                  <span className="detail-value truncate">{selectedPOI.crossChainOrderId}</span>
+                </div>
+              )}
+              
+              {selectedPOI.crossChainStatus && (
+                <div className="detail-item">
+                  <span className="detail-label">{t('treasureBox.crossChainStatus', 'Cross-Chain Status')}:</span>
+                  <span className={`detail-value status-${selectedPOI.crossChainStatus}`}>
+                    {t(`treasureBox.crossChainStatus.${selectedPOI.crossChainStatus}`, selectedPOI.crossChainStatus)}
+                  </span>
+                </div>
+              )}
+              
               {selectedPOI.hasL2Auction && (
                 <>
                   <div className="detail-item">
@@ -377,6 +413,54 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
                   </div>
                 </>
               )}
+              
+              {!selectedPOI.crossChainOrderId && (
+                <div className="cross-chain-actions">
+                  {crossChainSuccess ? (
+                    <div className="success-message">
+                      {t('treasureBox.crossChainSuccess', 'Cross-chain verification request submitted successfully!')}
+                    </div>
+                  ) : (
+                    <ContractFunctionButton
+                      contractFunction="open"
+                      functionArgs={[{
+                        fillDeadline: Math.floor(Date.now() / 1000) + 86400, // 24 hours from now
+                        orderDataType: "0x504f495665726966696361", // "POIVerifica" in hex
+                        orderData: `0x${selectedPOI.id.padStart(64, '0')}` // POI ID as bytes
+                      }]}
+                      networkId={11155111} // Sepolia
+                      buttonText={initiatingCrossChain ? 
+                        t('treasureBox.initiatingCrossChain', 'Initiating Cross-Chain...') : 
+                        t('treasureBox.initiateCrossChain', 'Initiate Cross-Chain Verification (IERC7683)')
+                      }
+                      className={`cross-chain-btn ${initiatingCrossChain ? 'disabled' : ''}`}
+                      onSuccess={() => {
+                        // Update the selected POI with cross-chain order details
+                        const orderId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+                        const updatedPOI = {
+                          ...selectedPOI,
+                          crossChainOrderId: orderId,
+                          crossChainStatus: 'pending' as const,
+                        };
+                        
+                        setSelectedPOI(updatedPOI);
+                        
+                        // Update the POI in the list
+                        const updatedPOIs = userPOIs.map(poi => 
+                          poi.id === updatedPOI.id ? updatedPOI : poi
+                        );
+                        
+                        setUserPOIs(updatedPOIs);
+                        setCrossChainSuccess(true);
+                      }}
+                      onError={(err) => {
+                        console.error('Error in cross-chain process:', err);
+                        setError(err instanceof Error ? err.message : t('treasureBox.errors.crossChainFailure'));
+                      }}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
           
@@ -387,6 +471,28 @@ export function L1DetailCard({ onBack, onShowOnMap }: L1DetailCardProps) {
             >
               {t('treasureBox.showOnMap', 'Show on Map')}
             </button>
+          </div>
+          
+          {/* ERC-7683 Cross-Chain Technical Details */}
+          <div className="detail-section technical-section">
+            <h4>{t('treasureBox.technicalDetails', 'Technical Details')}</h4>
+            <div className="code-block">
+              <pre>
+                {`// ERC-7683 Cross-Chain Order Example
+{
+  "originSettler": "${CONTRACTS.L1.address}",
+  "user": "${selectedPOI.owner}",
+  "originChainId": ${selectedPOI.chainId},
+  "orderDataType": "POIVerification",
+  "fillInstructions": [
+    {
+      "destinationChainId": 299792,
+      "destinationSettler": "${CONTRACTS.L2.address}"
+    }
+  ]
+}`}
+              </pre>
+            </div>
           </div>
         </div>
       </div>

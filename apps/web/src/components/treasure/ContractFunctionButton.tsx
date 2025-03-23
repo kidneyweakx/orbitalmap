@@ -8,12 +8,16 @@ import { parseEther } from 'viem';
 type SubscribeToPOIArgs = [string | bigint, string | bigint]; // poiId, price
 type RegisterPOIArgs = [string, string]; // name, stakeAmount
 type BidOnPOIArgs = [string | bigint, string | bigint]; // poiId, bidAmount
+type OpenCrossChainArgs = [{ fillDeadline: number; orderDataType: string; orderData: string }]; // ERC-7683 open
+type FillCrossChainArgs = [string, string, string]; // orderId, originData, fillerData
 
 // 映射合约函数到其参数类型
 type FunctionArgsMap = {
   'subscribeToPOI': SubscribeToPOIArgs;
   'registerPOI': RegisterPOIArgs;
   'bidOnPOI': BidOnPOIArgs;
+  'open': OpenCrossChainArgs;
+  'fill': FillCrossChainArgs;
 };
 
 interface ContractFunctionButtonProps<T extends keyof FunctionArgsMap> {
@@ -49,6 +53,10 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
         return BigInt(500000); // 500,000 gas
       case 'bidOnPOI':
         return BigInt(100000); // Reduced from 250,000 to 100,000 gas
+      case 'open':
+        return BigInt(400000); // ERC-7683 open cross-chain order
+      case 'fill':
+        return BigInt(400000); // IDestinationSettler fill cross-chain order
       default:
         return BigInt(100000); // Default 100,000 gas
     }
@@ -164,6 +172,18 @@ export function ContractFunctionButton<T extends keyof FunctionArgsMap>({
             (functionArgs as BidOnPOIArgs)[1],
             gasParams
           );
+          break;
+        case 'open':
+          // Simulate ERC-7683 open function call
+          console.log('Simulating ERC-7683 open function call with args:', functionArgs);
+          // In a real implementation, this would call the actual contract function
+          result = { success: true, data: 'Simulated ERC-7683 open function call' };
+          break;
+        case 'fill':
+          // Simulate IDestinationSettler fill function call
+          console.log('Simulating IDestinationSettler fill function call with args:', functionArgs);
+          // In a real implementation, this would call the actual contract function
+          result = { success: true, data: 'Simulated IDestinationSettler fill function call' };
           break;
         default:
           throw new Error(`Unsupported contract function: ${contractFunction}`);

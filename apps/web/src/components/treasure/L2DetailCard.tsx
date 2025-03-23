@@ -4,6 +4,7 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { POI, CONTRACTS } from '../../utils/contractUtils';
 import { Address, createWalletClient, custom, formatUnits, formatEther, parseEther, createPublicClient, http, Chain } from 'viem';
 import L2POIAuctionABI from '../../abi/L2POIAuction.json';
+import { ContractFunctionButton } from './ContractFunctionButton';
 
 // Define POI details type for display
 interface POIDetail extends POI {
@@ -19,6 +20,9 @@ interface POIDetail extends POI {
   linkedL1Name?: string;
   yourBid?: string;
   yourRank?: number;
+  // ERC-7683 cross-chain order details
+  crossChainOrderId?: string;
+  crossChainStatus?: 'pending' | 'filled' | 'expired';
 }
 
 interface L2DetailCardProps {
@@ -37,6 +41,8 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
   const [bidAmount, setBidAmount] = useState<string>('');
   const [isBidding, setIsBidding] = useState<boolean>(false);
   const [bidSuccess, setBidSuccess] = useState<boolean>(false);
+  const [crossChainFillSuccess, setCrossChainFillSuccess] = useState<boolean>(false);
+  const [fillingCrossChain] = useState<boolean>(false);
 
   // Define T1 chain configuration
   const t1Chain: Chain = {
@@ -192,7 +198,9 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
               linkedL1Id,
               linkedL1Name,
               yourBid: hasBid ? formatEther(userBidAmount) : undefined,
-              yourRank: hasBid ? Number(userRank) : undefined
+              yourRank: hasBid ? Number(userRank) : undefined,
+              crossChainOrderId: undefined,
+              crossChainStatus: undefined
             });
           } catch (error) {
             console.error(`Error fetching details for POI ${poiId}:`, error);
@@ -237,7 +245,9 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
             linkedL1Id: '1',
             linkedL1Name: 'Times Square',
             yourBid: '0.22',
-            yourRank: 2
+            yourRank: 2,
+            crossChainOrderId: undefined,
+            crossChainStatus: undefined
           },
           {
             id: '102',
@@ -259,7 +269,9 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
             linkedL1Id: '2',
             linkedL1Name: 'Central Park',
             yourBid: '0.12',
-            yourRank: 3
+            yourRank: 3,
+            crossChainOrderId: undefined,
+            crossChainStatus: undefined
           }
         ];
         
@@ -359,7 +371,9 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
           highestBid: bidAmount,
           highestBidder: `${account.slice(0, 6)}...${account.slice(-4)}`,
           yourBid: bidAmount,
-          yourRank: 1
+          yourRank: 1,
+          crossChainOrderId: undefined,
+          crossChainStatus: undefined
         };
         
         setSelectedPOI(updatedPOI);
@@ -385,7 +399,9 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
           highestBid: bidAmount,
           highestBidder: `${address.slice(0, 6)}...${address.slice(-4)}`,
           yourBid: bidAmount,
-          yourRank: 1
+          yourRank: 1,
+          crossChainOrderId: undefined,
+          crossChainStatus: undefined
         };
         
         setSelectedPOI(updatedPOI);
@@ -454,6 +470,19 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
           </button>
           <h3>{selectedPOI.name}</h3>
         </div>
+        
+        {/* ERC-7683 Cross-Chain Banner */}
+        <div className="cross-chain-banner">
+          <div className="banner-icon">🔗</div>
+          <div className="banner-text">
+            <h4>{t('treasureBox.erc7683Banner.title', 'Cross-Chain with ERC-7683')}</h4>
+            <p className="banner-short-text">{t('treasureBox.erc7683Banner.shortDescription', 'Secure cross-chain communication between L1 and L2')}</p>
+            <div className="banner-full-text">
+              <p>{t('treasureBox.erc7683Banner.description', 'This POI uses ERC-7683 standard for secure cross-chain communication between L1 and L2, enabling verification auctions and POI linking.')}</p>
+            </div>
+          </div>
+        </div>
+        
         <div className="poi-detail-content">
           <div className="network-info">
             <span className="network-badge">{selectedPOI.network}</span>
@@ -465,7 +494,7 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
             )}
           </div>
           
-          {/* ERC-7638 Cross-Chain Information */}
+          {/* ERC-7683 Cross-Chain Information */}
           {selectedPOI.linkedL1Id && (
             <div className="detail-section cross-chain-section">
               <h4>{t('treasureBox.crossChainInfo', 'Cross-Chain Information')}</h4>
@@ -475,6 +504,70 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
                   {selectedPOI.linkedL1Name} (ID: {selectedPOI.linkedL1Id})
                 </span>
               </div>
+              
+              {selectedPOI.crossChainOrderId && (
+                <div className="detail-item">
+                  <span className="detail-label">{t('treasureBox.crossChainOrderId', 'Cross-Chain Order ID')}:</span>
+                  <span className="detail-value truncate">{selectedPOI.crossChainOrderId}</span>
+                </div>
+              )}
+              
+              {selectedPOI.crossChainStatus && (
+                <div className="detail-item">
+                  <span className="detail-label">{t('treasureBox.crossChainStatus', 'Cross-Chain Status')}:</span>
+                  <span className={`detail-value status-${selectedPOI.crossChainStatus}`}>
+                    {t(`treasureBox.crossChainStatus.${selectedPOI.crossChainStatus}`, selectedPOI.crossChainStatus)}
+                  </span>
+                </div>
+              )}
+              
+              {!selectedPOI.crossChainOrderId && (
+                <div className="cross-chain-actions">
+                  {crossChainFillSuccess ? (
+                    <div className="success-message">
+                      {t('treasureBox.crossChainFillSuccess', 'Cross-chain order filled successfully!')}
+                    </div>
+                  ) : (
+                    <ContractFunctionButton
+                      contractFunction="fill"
+                      functionArgs={[
+                        `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`, // Mock orderId
+                        `0x${selectedPOI.linkedL1Id?.padStart(64, '0') || ''}`, // originData with linked L1 POI ID
+                        "0x" // Empty filler data
+                      ]}
+                      networkId={299792} // T1 network ID
+                      buttonText={fillingCrossChain ? 
+                        t('treasureBox.fillingCrossChain', 'Filling Cross-Chain Order...') : 
+                        t('treasureBox.fillCrossChain', 'Fill Cross-Chain Order (IDestinationSettler)')
+                      }
+                      className={`cross-chain-btn ${fillingCrossChain ? 'disabled' : ''}`}
+                      onSuccess={() => {
+                        // Update the selected POI with cross-chain order details
+                        const orderId = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+                        const updatedPOI = {
+                          ...selectedPOI,
+                          crossChainOrderId: orderId,
+                          crossChainStatus: 'filled' as const,
+                        };
+                        
+                        setSelectedPOI(updatedPOI);
+                        
+                        // Update the POI in the list
+                        const updatedPOIs = userPOIs.map(poi => 
+                          poi.id === updatedPOI.id ? updatedPOI : poi
+                        );
+                        
+                        setUserPOIs(updatedPOIs);
+                        setCrossChainFillSuccess(true);
+                      }}
+                      onError={(err) => {
+                        console.error('Error in cross-chain fill process:', err);
+                        setError(err instanceof Error ? err.message : t('treasureBox.errors.crossChainFillFailure'));
+                      }}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
           
@@ -583,6 +676,26 @@ export function L2DetailCard({ onBack, onShowOnMap }: L2DetailCardProps) {
             >
               {t('treasureBox.showOnMap', 'Show on Map')}
             </button>
+          </div>
+          
+          {/* ERC-7683 Cross-Chain Technical Details */}
+          <div className="detail-section technical-section">
+            <h4>{t('treasureBox.technicalDetails', 'Technical Details')}</h4>
+            <div className="code-block">
+              <pre>
+                {`// IDestinationSettler.fill Example
+fill(
+  bytes32 orderId,   // Cross-chain order identifier
+  bytes originData,  // Data from L1 (POI verification request)
+  bytes fillerData   // Additional data for the fill
+) {
+  // 1. Decode origin data to extract POI details
+  // 2. Initialize auction for POI validation
+  // 3. Allow validators to place bids
+  // 4. After auction, winning validator verifies POI
+}`}
+              </pre>
+            </div>
           </div>
         </div>
       </div>
