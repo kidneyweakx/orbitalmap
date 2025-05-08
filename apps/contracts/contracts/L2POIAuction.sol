@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IDestinationSettler.sol";
+import "./verifier/Verifier.sol";
 
 /**
  * @title L2POIAuction
@@ -66,14 +67,19 @@ contract L2POIAuction is IDestinationSettler {
     event VerificationCompleted(uint256 indexed poiId, address indexed validator, bytes zkProof);
     event CrossChainResultSubmitted(uint256 indexed poiId, bytes32 indexed orderId, address indexed validator);
 
+    // Verifier contract instance
+    IVerifier public verifier;
+
     /**
      * @dev Constructor to set L1 contract details
      * @param _l1OriginContract Address of L1 contract for POI marketplace
      * @param _l1ChainId Chain ID of L1
+     * @param _verifier Address of the Verifier contract
      */
-    constructor(address _l1OriginContract, uint256 _l1ChainId) {
+    constructor(address _l1OriginContract, uint256 _l1ChainId, address _verifier) {
         l1OriginContract = _l1OriginContract;
         l1ChainId = _l1ChainId;
+        verifier = IVerifier(_verifier);
     }
 
     /**
@@ -183,8 +189,9 @@ contract L2POIAuction is IDestinationSettler {
      * @dev Submit POI verification proof
      * @param poiId ID of the POI
      * @param zkProof ZK proof of POI verification
+     * @param publicInputs Public inputs for the proof
      */
-    function submitPOIProof(uint256 poiId, bytes memory zkProof) external {
+    function submitPOIProof(uint256 poiId, bytes memory zkProof, bytes32[] memory publicInputs) external {
         POIVerificationRequest storage request = poiRequests[poiId];
         require(request.auctionEnded, "Auction not ended");
         require(msg.sender == request.winningValidator, "Not the winning validator");
@@ -192,6 +199,9 @@ contract L2POIAuction is IDestinationSettler {
         
         // In production, would verify the ZK proof
         // For simplicity, accept any proof submission
+        // Verify the ZK proof
+        bool isValid = verifier.verify(zkProof, publicInputs);
+        require(isValid, "Invalid ZK proof");
         
         request.verified = true;
         request.zkProof = zkProof;

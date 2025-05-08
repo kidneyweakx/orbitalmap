@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IERC7683.sol";
+import "./verifier/Verifier.sol";
 
 /**
  * @title L1POIMarketplace
@@ -90,14 +91,19 @@ contract L1POIMarketplace is IERC7683 {
         _;
     }
 
+    // Verifier contract instance
+    IVerifier public verifier;
+
     /**
      * @dev Constructor to set L2 contract details
      * @param _l2DestinationContract Address of L2 contract for POI verification
      * @param _l2ChainId Chain ID of L2
+     * @param _verifier Address of the Verifier contract
      */
-    constructor(address _l2DestinationContract, uint256 _l2ChainId) {
+    constructor(address _l2DestinationContract, uint256 _l2ChainId, address _verifier) {
         l2DestinationContract = _l2DestinationContract;
         l2ChainId = _l2ChainId;
+        verifier = IVerifier(_verifier);
         owner = msg.sender;
     }
 
@@ -147,8 +153,9 @@ contract L1POIMarketplace is IERC7683 {
      * @param poiId ID of the POI
      * @param validator Address of the validator who verified the POI
      * @param proof ZK proof of the POI verification
+     * @param publicInputs Public inputs for the proof
      */
-    function resolvePOI(uint256 poiId, address validator, bytes memory proof) external {
+    function resolvePOI(uint256 poiId, address validator, bytes memory proof, bytes32[] memory publicInputs) external {
         POI storage poi = pois[poiId];
         require(poi.state == VerificationState.Verifying, "POI not in verifying state");
         require(poi.owner != address(0), "POI does not exist");
@@ -156,6 +163,10 @@ contract L1POIMarketplace is IERC7683 {
         
         // Verify the proof (in production, this would validate ZK proof)
         // For simplicity, we're just accepting the proof without verification
+        // Verify the ZK proof
+        bool isValid = verifier.verify(proof, publicInputs);
+        require(isValid, "Invalid ZK proof");
+
         poi.verified = true;
         poi.validator = validator;
         poi.proof = proof;
