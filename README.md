@@ -1,4 +1,4 @@
-# OrbitalMap
+<h1 align="center">OrbitalMap</h1>
 
 OrbitalMap is a privacy-focused, web3 mapping platform that combines Zero-Knowledge proofs, Trusted Execution Environments (TEEs), and ERC-7683 smart contracts to create a secure and private geospatial experience.
 
