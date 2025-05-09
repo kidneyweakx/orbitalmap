@@ -1,4 +1,13 @@
-<h1 align="center">OrbitalMap</h1>
+<div align="center">
+<h1>OrbitalMap</h1>
+
+<p> OrbitalMap is a privacy-focused, web3 mapping platform that combines Zero-Knowledge proofs, Trusted Execution Environments (TEEs), and ERC-7683 smart contracts to create a secure and private geospatial experience.</p>
+
+<img src="./apps/web/public/logo.png" width="50%" height="50%"></img>
+
+[![](https://img.shields.io/github/license/kidneyweakx/orbitalmap
+)](./LICENSE)
+</div>
 
 OrbitalMap is a privacy-focused, web3 mapping platform that combines Zero-Knowledge proofs, Trusted Execution Environments (TEEs), and ERC-7683 smart contracts to create a secure and private geospatial experience.
 
@@ -91,7 +100,7 @@ Our ZK proofs built with Noir enable privacy-preserving verification mechanisms:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/25trifecta/orbitalmap.git
+   git clone https://github.com/kidneyweakx/orbitalmap.git
    cd orbitalmap
    ```
 
